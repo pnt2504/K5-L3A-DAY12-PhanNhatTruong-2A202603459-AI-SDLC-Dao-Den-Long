@@ -1,18 +1,22 @@
 # Đảo Đèn Lồng
 
-Bạn điều khiển Mây gom đom đóm, châm dầu và giữ đủ đèn sáng tới bình minh trên ba hòn đảo. Bản Phase 3 dùng Test Contract v1.2.
+[Video demo](https://github.com/pnt2504/K5-L3A-DAY12-PhanNhatTruong-2A202603459-AI-SDLC-Dao-Den-Long/releases/download/v1.0.0/dao-den-long-demo.mp4) · [Tải bản web v1.0.0](https://github.com/pnt2504/K5-L3A-DAY12-PhanNhatTruong-2A202603459-AI-SDLC-Dao-Den-Long/releases/tag/v1.0.0)
+
+Bạn điều khiển Mây gom đom đóm, châm dầu và giữ đủ đèn sáng tới bình minh trên ba hòn đảo. Bản phát hành v1.0.0 dùng Test Contract v1.3.
+
+![Mây trên Đảo Bến, với chỉ hướng Bóng Mực vừa xuất hiện](docs/proof/phase-4/gameplay.jpg)
 
 ## Cài và chơi
 
-Cần Node.js 22.12 trở lên và trình duyệt có WebGL 2. Trên macOS, Linux hoặc Windows, chạy từ thư mục repo.
+Cần Node.js 22.12 trở lên, npm và trình duyệt có WebGL 2. Trên macOS, Linux hoặc Windows, chạy từ thư mục repo.
 
 ```sh
 npm ci
 npm run build
-npm run preview -- --open
+node scripts/run.js
 ```
 
-Mở địa chỉ Vite in ra nếu trình duyệt chưa bật. Chọn **Bắt đầu** rồi **Vào đêm**. Thêm `?seed=12` để tái tạo bố cục đầu Đêm 1. **Chơi lại Đêm** dùng cùng seed. Game lưu âm lượng, độ nhạy chuột và tùy chọn **Bảng màu dễ phân biệt**.
+Mở địa chỉ hiện trong terminal nếu trình duyệt chưa bật. Với file phát hành đã build, giải nén rồi chạy lệnh cuối trong thư mục vừa giải nén. Chọn **Bắt đầu** rồi **Vào đêm**. Thêm `?seed=12` vào URL để tái tạo bố cục đầu Đêm 1. **Chơi lại Đêm** dùng cùng seed.
 
 | Phím | Hành động |
 |---|---|
@@ -24,23 +28,38 @@ Mở địa chỉ Vite in ra nếu trình duyệt chưa bật. Chọn **Bắt đ
 | **Q** | Tỏa Sáng. Tốn 3 đom đóm, đẩy và làm choáng Bóng Mực trong tầm 5 m. Hồi chiêu 3 giây |
 | **Esc** hoặc **P** | Tạm dừng hoặc tiếp tục |
 
+Mục **Cài đặt → Đổi phím** cho phép đổi từng hành động và khôi phục mặc định. Game cũng lưu âm lượng, độ nhạy chuột, bảng màu, giảm chuyển động và chữ lớn. Chữ UI ở 1280×720 có cỡ tối thiểu 18 px và tùy chọn 22,5 px. Các chỉ báo hiện hướng Bóng Mực mới xuất hiện, gió sắp thổi, các đèn ít dầu và 10 giây cuối.
+
 Đảo Bến, Đảo Cau và Đảo Chuông yêu cầu giữ ít nhất **3/5**, **4/6** và **5/7** đèn đến hết **4:00**, **4:30** và **5:00**. Mỗi đêm bắt đầu với 3 Ngọn Lửa. Đèn khởi đầu với 100 dầu khi được thắp và hao 1 dầu mỗi giây. Mỗi đom đóm châm thêm 10 dầu. Dưới 30 dầu, đèn nhấp nháy, mất vùng an toàn và có thể bị Bóng Mực hút dầu. Mỗi lần thắp tăng sức chứa thêm hai, từ 10 lên tối đa 20. Gió Lạc vẫn có thể cướp đom đóm ở hai đêm sau.
 
 Mỗi đom đóm nạp hoặc châm được **5 điểm**. Lần thắp đầu được **100**, thắp lại được **40**. Tỏa Sáng được **5 điểm** mỗi Bóng Mực trúng, hoặc **15** nếu nó đang hút dầu. Khi thắng ở bình minh, mỗi đèn sáng thưởng **50 cộng số dầu nguyên còn lại**, và mỗi Ngọn Lửa còn lại thưởng **50**. Màn Bình Minh hiển thị tổng điểm các đêm đã thắng.
 
-## Kiểm chứng Phase 3
+## Bảng xếp hạng
+
+Sau khi thua hoặc tới Bình Minh, có thể lưu tổng điểm các đêm đã thắng. Tên dài 3–12 ký tự chữ cái Latin, chữ số hoặc dấu gạch dưới. Bảng giữ 10 mục điểm cao nhất, bằng điểm thì thành tích sớm hơn đứng trước. Bản chạy cục bộ lưu ở `~/.dao-den-long/leaderboard.json` và xuất bằng lệnh dưới đây.
+
+```sh
+node scripts/run.js --export-leaderboard leaderboard.json
+```
+
+Khi đưa riêng thư mục `dist` lên hosting tĩnh, bảng xếp hạng lưu trong hồ sơ trình duyệt. Lệnh xuất từ terminal đọc bảng điểm của trình chạy cục bộ.
+
+## Kiểm chứng và đo hiệu năng
 
 ```sh
 npm test
-node src/headless.js --seed 12 --night 1 --ticks 180 --scenario test/fixtures/phase-3/maintenance.scenario.json --inputs test/fixtures/phase-3/maintenance.inputs.json --out out.jsonl
-node scripts/verify-phase3.js
+node src/headless.js --seed 12 --night 1 --ticks 180 --snapshot-every 30 --scenario test/fixtures/phase-3/maintenance.scenario.json --inputs test/fixtures/phase-3/maintenance.inputs.json --out out.jsonl
+node scripts/bench.js --seed 42 --duration 30 --out bench.json
+node --expose-gc scripts/soak.js --seed 7 --nights 10 --out soak.json
 ```
 
-CLI nhận `--night 1`, `2` hoặc `3`. Ví dụ kiểm tra đèn cạn, thắp lại, châm dầu, Bóng Mực hút và kết quả ở bình minh. Tệp `game.contract.json` khai báo lệnh chạy và thông số.
+CLI headless nhận `--night 1`, `2` hoặc `3`. Ví dụ kiểm tra đèn cạn, thắp lại, châm dầu, Bóng Mực hút và kết quả ở bình minh. Benchmark dùng bản build, chạy Chromium trong cửa sổ với viewport 1280×720, cần môi trường đồ họa và WebGL 2. Script dùng Chrome hoặc Chromium có sẵn, hoặc tải Chromium qua Playwright nếu thiếu. Ba giây đầu là khởi động. Chromium được mở với `--disable-gpu-vsync` và `--disable-frame-rate-limit`. Giá trị `peak_mem_mb` là `null` vì renderer web không có RSS tiến trình để ghi. [Cờ Chromium](https://chromium.googlesource.com/chromium/src/+/HEAD/components/viz/common/switches.cc) · [Cài browser Playwright](https://playwright.dev/docs/browsers)
 
-- [ADR, hồi quy và nhật ký Phase 3](docs/notes/phase-3.md) · [Changelog](CHANGELOG.md)
-- [Bằng chứng Phase 3](docs/proof/phase-3/README.md)
-- [Bằng chứng Phase 1](docs/proof/phase-1/README.md) · [Bằng chứng Phase 2](docs/proof/phase-2/README.md). Chạy script tương ứng tại tag `phase-1` hoặc `phase-2`.
+Soak giữ một tiến trình và dùng seed từ 7 trở đi, xoay Đêm 1–3. RSS được đọc sau khi tải đêm đầu và sau khi giải phóng đêm cuối, với GC ở cả hai mốc. Chạy `node scripts/check-browser.js` để kiểm tra trình duyệt và lưu bằng chứng cục bộ.
+
+- [Bằng chứng Phase 4](docs/proof/phase-4/README.md) · [Benchmark](bench.json) · [Soak](soak.json)
+- [Retro bốn phase](docs/retro.md) · [Changelog](CHANGELOG.md) · [Giấy phép](LICENSE)
+- [Bằng chứng Phase 1](docs/proof/phase-1/README.md) · [Bằng chứng Phase 2](docs/proof/phase-2/README.md) · [Bằng chứng Phase 3](docs/proof/phase-3/README.md). Chạy script tương ứng tại tag của phase.
 - [Hướng dẫn cho agent](AGENTS.md) · [Nguồn và công cụ](CREDITS.md)
 
 ## Sáng tạo của tôi

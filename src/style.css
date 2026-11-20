@@ -13,6 +13,8 @@ body { margin: 0; overflow: hidden; }
 [hidden] { display: none !important; }
 #game { position: relative; width: 100vw; height: 100vh; height: 100dvh; }
 #game[data-palette="distinct"] { --warning: #FFFFFF; }
+#game { --ui-font: 18px; --font-scale: 1; font-size: var(--ui-font); }
+#game[data-large-text="true"] { --ui-font: 22.5px; --font-scale: 1.25; }
 #view { position: absolute; inset: 0; touch-action: none; }
 #view canvas { display: block; width: 100%; height: 100%; }
 #hud {
@@ -49,10 +51,11 @@ body { margin: 0; overflow: hidden; }
 #dawn-target { font-size: .68rem; color: #F5F1E6; }
 @keyframes clock-alert { 50% { opacity: .52; } }
 @media (prefers-reduced-motion: reduce) { #time.urgent { animation: none; } }
+#game[data-reduced-motion="true"] #time.urgent { animation: none; }
 .flames { color: var(--amber); letter-spacing: .25em; white-space: nowrap; }
 .flames i { color: #a09392; font-style: normal; }
 .score { margin-inline-start: 12px; color: #F2C14E; font-size: .78rem; white-space: nowrap; }
-#pause-button { position: absolute; top: clamp(78px, 8vw, 99px); right: clamp(12px, 2.6vw, 32px); }
+#pause-button { position: absolute; top: calc(clamp(12px, 2.6vw, 32px) + 4.7 * var(--ui-font) + 31px); right: clamp(12px, 2.6vw, 32px); }
 .small { padding: 5px 10px; }
 #controls {
   position: absolute;
@@ -131,7 +134,7 @@ kbd {
 .ability kbd { text-align: center; padding: 3px 4px; }
 .ability strong { display: block; color: var(--amber); font-size: .66rem; margin-top: 1px; }
 #charm-status { display: block; margin: 0; color: var(--amber); text-align: center; }
-#direction {
+#direction, #shade-direction {
   position: absolute;
   transform: translate(-50%, -50%);
   width: 38px;
@@ -144,7 +147,23 @@ kbd {
   color: var(--amber);
   pointer-events: none;
 }
-#direction span { display: inline-block; transform: rotate(var(--turn)); }
+#shade-direction { color: var(--warning); border-color: var(--warning); }
+#direction span, #shade-direction span { display: inline-block; transform: rotate(var(--turn)); }
+#captions {
+  position: absolute;
+  top: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface);
+  color: var(--warning);
+  border: 1px solid #F2C14E57;
+  border-radius: 8px;
+  padding: 7px 13px;
+  text-align: center;
+  pointer-events: none;
+  max-width: 82vw;
+}
+#feedback { top: 22%; }
 #fps { position: absolute; left: 2vw; bottom: 2vh; background: var(--surface); padding: 7px 9px; font-size: .75rem; }
 #overlay {
   position: absolute;
@@ -154,7 +173,10 @@ kbd {
   background: linear-gradient(90deg, #101524f8 0%, #101524df 23%, #131a2d3b 62%, #10152400 90%);
 }
 .panel { padding: 24px 0; margin-left: clamp(26px, 8vw, 126px); max-width: min(340px, 80vw); }
-#overlay:not([data-screen="menu"]) h1 { font-size: clamp(2.65rem, 6vw, 5.2rem); text-wrap: balance; }
+#overlay:not([data-screen="menu"]) h1 {
+  font-size: calc(clamp(2.65rem, 6vw, 5.2rem) * var(--font-scale));
+  text-wrap: balance;
+}
 #overlay[data-screen="menu"] h1 { text-wrap: wrap; }
 #overlay:not([data-screen="menu"]) { background: linear-gradient(90deg, #0e1430f6, #0e1430bf 47%, #0e143056); }
 .island-name {
@@ -172,7 +194,7 @@ h1 {
   margin: 19px 0;
   color: #fff2d6;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(3.25rem, 7vw, 6.6rem);
+  font-size: calc(clamp(3.25rem, 7vw, 6.6rem) * var(--font-scale));
   font-weight: 400;
   line-height: .88;
   letter-spacing: -.048em;
@@ -199,10 +221,44 @@ button:focus-visible { outline: 3px solid #fff6d7; outline-offset: 4px; }
 #settings { display: grid; gap: 9px; margin-bottom: 21px; }
 #settings label { display: flex; justify-content: space-between; font-size: .92rem; }
 #settings input { accent-color: var(--amber); }
+#settings input[type="checkbox"] { width: 22px; height: 22px; }
+#overlay[data-screen="bindings"] .panel, #overlay[data-screen="leaderboard"] .panel {
+  max-width: min(660px, 84vw);
+  width: min(660px, 84vw);
+}
+#overlay .panel { max-height: 100dvh; overflow-y: auto; }
+#key-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; }
+.key-row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.key-row button { min-width: 86px; padding: 4px 10px; }
+#key-status { min-height: 1.5em; margin: 9px 0 16px; }
+#score-list { padding-left: 2em; max-height: 46vh; overflow-y: auto; }
+#score-list li { padding: 5px 0 5px 3px; }
+.score-row { display: grid; grid-template-columns: 1fr 5ch minmax(6ch, auto); gap: 1ch; align-items: baseline; }
+.score-row strong { color: var(--amber); }
+.score-row span:last-child { text-align: right; }
+#score-form { display: grid; gap: 6px; margin: 0 0 15px; }
+.score-input { display: flex; gap: 6px; }
+#score-name {
+  min-width: 0;
+  flex: 1;
+  background: #0E1430;
+  border: 1px solid var(--amber);
+  border-radius: 6px;
+  color: inherit;
+  padding: 6px;
+}
+#save-score { flex: none; }
+#game :is(.hud-label, .flames, #dawn-target, .score, .keys, kbd, #action, #feedback, #captions, #fps, .ability,
+  .ability strong, #charm-status, .island-name, #description, button, label, output, #key-status, #score-list,
+  #score-form, #score-name, #score-help, #score-status) { font-size: var(--ui-font); }
+#time { font-size: calc(max(1.42rem, 18px) * var(--font-scale)); }
+.ability { grid-template-columns: max-content 1fr; }
+.score { display: inline-block; }
 @media (max-width: 560px) {
   .hud-card { padding: 8px 9px; }
   .hud-label { letter-spacing: .06em; font-size: .62rem; }
   .score { display: block; margin: 2px 0 0; }
   .panel { margin-left: 8vw; }
   #abilities { bottom: 10rem; }
+  #key-list { grid-template-columns: 1fr; }
 }

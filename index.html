@@ -28,6 +28,8 @@
       <button type="button" class="small secondary" id="pause-button" aria-label="Tạm dừng" hidden>Ⅱ</button>
       <div id="feedback" role="status" hidden></div>
       <div id="direction" aria-label="Hướng tới đèn chưa sáng" hidden><span>▲</span></div>
+      <div id="shade-direction" class="warning" role="img" aria-label="Hướng Bóng Mực vừa xuất hiện" hidden><span>▲</span></div>
+      <div id="captions" role="status" aria-live="polite" hidden></div>
       <div id="reticle" aria-hidden="true" hidden></div>
       <footer id="controls" hidden>
         <div id="action" role="status" hidden></div>
@@ -35,11 +37,12 @@
           <span class="hud-label">Đom đóm <strong id="carry"></strong></span>
           <div id="slots" aria-hidden="true"></div>
         </div>
-        <p class="keys"><kbd>WASD</kbd> Di chuyển <kbd>Space</kbd> Nhảy <kbd>Shift</kbd> Lướt <kbd>Q</kbd> Tỏa Sáng <kbd>P</kbd> Dừng <span>Kéo chuột để xoay camera</span></p>
+        <p class="keys"><kbd id="move-key">W/A/S/D</kbd> Di chuyển <kbd id="jump-key">Space</kbd> Nhảy
+          <kbd id="pause-key">P</kbd> Dừng <span>Kéo chuột xoay camera</span></p>
       </footer>
       <aside id="abilities" aria-label="Kỹ năng" hidden>
-        <div class="ability"><kbd>Shift</kbd><span>Lướt <strong id="dash-status"></strong></span></div>
-        <div class="ability"><kbd>Q</kbd><span>Tỏa Sáng <strong id="pulse-status"></strong></span></div>
+        <div class="ability"><kbd id="dash-key">Shift</kbd><span>Lướt <strong id="dash-status"></strong></span></div>
+        <div class="ability"><kbd id="pulse-key">Q</kbd><span>Tỏa Sáng <strong id="pulse-status"></strong></span></div>
         <p id="charm-status" hidden></p>
       </aside>
       <output id="fps" hidden></output>
@@ -54,11 +57,28 @@
             <label for="sensitivity">Độ nhạy chuột <output id="sensitivity-value"></output></label>
             <input type="range" id="sensitivity" min="25" max="200" step="5">
             <label for="distinct-colors">Bảng màu dễ phân biệt <input type="checkbox" id="distinct-colors"></label>
+            <label for="reduced-motion">Giảm chuyển động <input type="checkbox" id="reduced-motion"></label>
+            <label for="large-text">Chữ lớn <input type="checkbox" id="large-text"></label>
           </div>
+          <div id="key-settings" hidden>
+            <div id="key-list"></div>
+            <p id="key-status" role="status" aria-live="polite"></p>
+          </div>
+          <ol id="score-list" hidden></ol>
+          <form id="score-form" hidden>
+            <label for="score-name">Tên trên bảng xếp hạng</label>
+            <div class="score-input">
+              <input id="score-name" name="name" required minlength="3" maxlength="12" pattern="[A-Za-z0-9_]{3,12}"
+                autocomplete="off" spellcheck="false" aria-describedby="score-help score-status">
+              <button id="save-score" type="submit">Lưu điểm</button>
+            </div>
+            <span id="score-help">3–12 ký tự chữ, số hoặc dấu gạch dưới</span>
+            <span id="score-status" role="status"></span>
+          </form>
           <div id="menu-buttons">
             <button type="button" id="start">Bắt đầu</button>
             <button type="button" id="secondary" class="secondary">Cài đặt</button>
-            <button type="button" id="tertiary" class="secondary" hidden></button>
+            <button type="button" id="tertiary" class="secondary">Bảng xếp hạng</button>
             <button type="button" id="quaternary" class="secondary" hidden></button>
           </div>
         </div>

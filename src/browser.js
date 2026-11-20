@@ -4,12 +4,13 @@ import { dawnThreshold, fuelValue, isWeakLight, lightCost, nearbyLantern, neares
 import { completeNight, createCampaign, nextNight, TOTAL_NIGHTS } from './campaign.js';
 import { createSound } from './audio.js';
 import { createView } from './scene.js';
+import { actionForCode, actions, bindingConflict, defaultBindings, isBindable, keyName, normalizeBindings } from './controls.js';
+import { saveEntry, showEntries } from './leaderboard-client.js';
 
 const elements = Object.fromEntries([...document.querySelectorAll('[id]')].map((node) => [node.id, node]));
 const buttons = ['start', 'secondary', 'tertiary', 'quaternary'].map((id) => elements[id]);
-const actions = new Map([['Space', 'jump'], ['KeyE', 'interact'], ['KeyQ', 'pulse'],
-  ['ShiftLeft', 'dash'], ['ShiftRight', 'dash']]);
-const movement = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+const movement = new Set(['up', 'left', 'down', 'right', 'cameraLeft', 'cameraRight']);
+const edgeActions = new Set(['jump', 'interact', 'pulse', 'dash']);
 const narration = [
   'Mây ơi, hãy lần theo con đường quanh bến. Đèn sẽ cạn dầu, con nhớ quay lại châm thêm trước bình minh.',
   'Qua cầu tre để sang đảo bên kia. Bục nhảy đưa con qua biển mây, còn bùa đỏ sẽ tiếp sức cho đôi chân.',
@@ -24,22 +25,27 @@ const measureFPS = query.get('fps') === '1';
 const tickLength = 1 / TICKS_PER_SECOND;
 const slots = Array.from({ length: tuning.capacity_max }, () =>
   elements.slots.appendChild(document.createElement('span')));
-const keys = new Set();
+const keys = new Map();
 const pending = new Set();
 const sound = createSound();
+const keyButtons = new Map();
 
 function bounded(value, minimum, maximum, fallback) {
   return typeof value === 'number' && Number.isFinite(value) ? Math.max(minimum, Math.min(maximum, value)) : fallback;
 }
 
 function readSettings() {
+  let stored;
   try {
-    const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY)) ?? {};
-    return { volume: bounded(stored.volume, 0, 100, 55), sensitivity: bounded(stored.sensitivity, 25, 200, 100),
-      distinctColors: stored.distinctColors === true };
+    stored = JSON.parse(localStorage.getItem(SETTINGS_KEY));
   } catch {
-    return { volume: 55, sensitivity: 100, distinctColors: false };
+    stored = null;
   }
+  return { volume: bounded(stored?.volume, 0, 100, 55), sensitivity: bounded(stored?.sensitivity, 25, 200, 100),
+    distinctColors: stored?.distinctColors === true, largeText: stored?.largeText === true,
+    reducedMotion: typeof stored?.reducedMotion === 'boolean' ? stored.reducedMotion
+      : matchMedia('(prefers-reduced-motion: reduce)').matches,
+    bindings: normalizeBindings(stored?.bindings) };
 }
 
 const settings = readSettings();
@@ -57,6 +63,10 @@ let lastFlames = -1;
 let lastSeconds;
 let settingsBack;
 let benchmark;
+let captureAction;
+let offeredScore;
+let screenRevision = 0;
+let spawnIndicator;
 
 function text(node, value) {
   if (node.textContent !== value) node.textContent = value;
@@ -114,8 +124,9 @@ function drawHud() {
   elements.action.hidden = !nearby;
   if (nearby) {
     const warning = isWeakLight(nearby);
-    const action = nearby.lit ? `E — Châm dầu (${fuelValue(nearby).toFixed(1)}/100)`
-      : `E — ${nearby.everLit ? 'Thắp lại' : 'Nạp ánh sáng'} (${nearby.deposited}/${lightCost(nearby)})`;
+    const key = keyName(settings.bindings.interact);
+    const action = nearby.lit ? `${key} — Châm dầu (${fuelValue(nearby).toFixed(1)}/100)`
+      : `${key} — ${nearby.everLit ? 'Thắp lại' : 'Nạp ánh sáng'} (${nearby.deposited}/${lightCost(nearby)})`;
     elements.action.classList.toggle('warning', warning);
     text(elements.action, warningText(action, warning));
   }
@@ -124,6 +135,14 @@ function drawHud() {
     elements.feedback.classList.toggle('warning', feedbackWarning);
     text(elements.feedback, warningText(feedbackMessage, feedbackWarning));
   }
+  const captions = [];
+  if (spawnIndicator && simTick < spawnIndicator.until) captions.push('Bóng Mực xuất hiện');
+  if (game.wind.warning) captions.push('Gió mạnh sắp tới');
+  if (seconds > 0 && seconds <= 10) captions.push(`Còn ${seconds} giây`);
+  const low = lanterns.filter(isWeakLight);
+  if (low.length > 0) captions.push(`Đèn yếu: ${low.map(({ id }) => id).join(', ')}`);
+  elements.captions.hidden = captions.length === 0;
+  if (captions.length > 0) text(elements.captions, warningText(captions.join(' · '), true));
 }
 
 function clearInput() {
@@ -134,10 +153,16 @@ function clearInput() {
 
 function showPanel(screen, chapter, title, description, options) {
   mode = screen;
+  screenRevision += 1;
+  captureAction = undefined;
+  offeredScore = undefined;
   elements.game.dataset.state = screen;
   elements.overlay.dataset.screen = screen;
   elements.overlay.hidden = false;
   elements.settings.hidden = screen !== 'settings';
+  elements['key-settings'].hidden = screen !== 'bindings';
+  elements['score-list'].hidden = screen !== 'leaderboard';
+  elements['score-form'].hidden = true;
   text(elements.chapter, chapter);
   text(elements.title, title);
   text(elements.description, description);
@@ -151,6 +176,8 @@ function showPanel(screen, chapter, title, description, options) {
   elements.controls.hidden = true;
   elements.abilities.hidden = true;
   elements.direction.hidden = true;
+  elements['shade-direction'].hidden = true;
+  elements.captions.hidden = true;
   elements.reticle.hidden = true;
   elements.feedback.hidden = true;
   elements.fps.hidden = true;
@@ -174,16 +201,28 @@ function setSettingsValues() {
   elements.volume.value = settings.volume;
   elements.sensitivity.value = settings.sensitivity;
   elements['distinct-colors'].checked = settings.distinctColors;
+  elements['large-text'].checked = settings.largeText;
+  elements['reduced-motion'].checked = settings.reducedMotion;
   elements.game.dataset.palette = settings.distinctColors ? 'distinct' : 'standard';
+  elements.game.dataset.largeText = settings.largeText;
+  elements.game.dataset.reducedMotion = settings.reducedMotion;
   text(elements['volume-value'], `${settings.volume}%`);
   text(elements['sensitivity-value'], `${settings.sensitivity}%`);
   sound.volume(settings.volume / 100);
+  text(elements['move-key'], ['up', 'left', 'down', 'right'].map((action) => keyName(settings.bindings[action])).join('/'));
+  for (const action of ['jump', 'dash', 'pulse', 'pause']) {
+    text(elements[`${action}-key`], keyName(settings.bindings[action]));
+  }
+  for (const [action, label] of actions) {
+    const button = keyButtons.get(action);
+    if (!button) continue;
+    const name = keyName(settings.bindings[action]);
+    text(button, name);
+    button.setAttribute('aria-label', `Đổi phím ${label}. Hiện tại: ${name}`);
+  }
 }
 
-function updateSettings() {
-  settings.volume = elements.volume.valueAsNumber;
-  settings.sensitivity = elements.sensitivity.valueAsNumber;
-  settings.distinctColors = elements['distinct-colors'].checked;
+function persistSettings() {
   setSettingsValues();
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -192,10 +231,66 @@ function updateSettings() {
   }
 }
 
+function updateSettings() {
+  settings.volume = elements.volume.valueAsNumber;
+  settings.sensitivity = elements.sensitivity.valueAsNumber;
+  settings.distinctColors = elements['distinct-colors'].checked;
+  settings.largeText = elements['large-text'].checked;
+  settings.reducedMotion = elements['reduced-motion'].checked;
+  persistSettings();
+}
+
 function showSettings(back) {
   settingsBack = back;
-  showPanel('settings', 'Đảo Đèn Lồng', 'Cài đặt', '', [['Quay lại', back]]);
+  showPanel('settings', 'Đảo Đèn Lồng', 'Cài đặt', '',
+    [['Quay lại', back], ['Đổi phím', () => showBindingSettings(back)]]);
   setSettingsValues();
+}
+
+function showBindingSettings(back) {
+  const returnToSettings = () => showSettings(back);
+  settingsBack = returnToSettings;
+  showPanel('bindings', 'Cài đặt', 'Đổi phím', '',
+    [['Quay lại', returnToSettings], ['Khôi phục mặc định', () => {
+      captureAction = undefined;
+      settings.bindings = { ...defaultBindings };
+      persistSettings();
+      text(elements['key-status'], 'Đã khôi phục phím mặc định.');
+    }]]);
+  text(elements['key-status'], '');
+  setSettingsValues();
+}
+
+function captureBinding(event) {
+  if (event.code === 'Tab') {
+    captureAction = undefined;
+    text(elements['key-status'], '');
+    return;
+  }
+  event.preventDefault();
+  if (event.repeat) return;
+  if (!isBindable(event.code) || event.altKey || event.metaKey || event.ctrlKey) {
+    text(elements['key-status'], 'Chọn một phím chữ, số, mũi tên hoặc phím điều khiển đơn.');
+    return;
+  }
+  const conflict = bindingConflict(settings.bindings, captureAction, event.code);
+  if (conflict) {
+    text(elements['key-status'], `${keyName(event.code)} đã dùng cho ${conflict}. Hãy chọn phím khác.`);
+    return;
+  }
+  settings.bindings[captureAction] = event.code;
+  captureAction = undefined;
+  persistSettings();
+  text(elements['key-status'], `Đã lưu phím ${keyName(event.code)}.`);
+}
+
+function offerScore(score) {
+  offeredScore = { score, nights_won: campaign.wins.length, seed };
+  elements['score-form'].reset();
+  elements['score-form'].hidden = false;
+  elements['score-name'].disabled = false;
+  elements['save-score'].disabled = false;
+  text(elements['score-status'], '');
 }
 
 function run(view) {
@@ -205,6 +300,7 @@ function run(view) {
     accumulator = 0;
     previousTime = undefined;
     feedbackUntil = 0;
+    spawnIndicator = undefined;
     lastSeconds = undefined;
     benchmark = undefined;
     clearInput();
@@ -218,7 +314,55 @@ function run(view) {
     resetNight();
     showPanel('menu', 'Ba hòn đảo', 'Đảo Đèn Lồng',
       'Cùng Mây gom đom đóm, châm dầu và giữ ba hòn đảo sáng đến bình minh.',
-      [['Bắt đầu', showIntro], ['Cài đặt', () => showSettings(showMenu)]]);
+      [['Bắt đầu', showIntro], ['Cài đặt', () => showSettings(showMenu)], ['Bảng xếp hạng', showLeaderboard]]);
+  }
+
+  async function showLeaderboard() {
+    elements['score-list'].replaceChildren();
+    showPanel('leaderboard', 'Đảo Đèn Lồng', 'Bảng xếp hạng', 'Đang đọc kết quả…', [['Về menu', showMenu]]);
+    const revision = screenRevision;
+    try {
+      const entries = await showEntries();
+      if (revision !== screenRevision) return;
+      text(elements.description, entries.length ? '' : 'Chưa có điểm nào được lưu.');
+      for (const entry of entries) {
+        const item = document.createElement('li');
+        const row = document.createElement('div');
+        row.className = 'score-row';
+        const name = document.createElement('strong');
+        const progress = document.createElement('span');
+        const score = document.createElement('span');
+        name.textContent = entry.name;
+        progress.textContent = `${entry.nights_won}/3`;
+        progress.title = 'Số đêm đã thắng';
+        score.textContent = entry.score.toLocaleString('vi-VN');
+        item.title = `${new Date(entry.achieved_at).toLocaleString('vi-VN')} · Seed ${entry.seed}`;
+        row.append(name, progress, score);
+        item.append(row);
+        elements['score-list'].append(item);
+      }
+    } catch (error) {
+      if (revision === screenRevision) text(elements.description, error.message);
+    }
+  }
+
+  async function submitScore(event) {
+    event.preventDefault();
+    if (!offeredScore || elements['save-score'].disabled) return;
+    const attempt = offeredScore;
+    elements['save-score'].disabled = true;
+    try {
+      await saveEntry({ ...attempt, name: elements['score-name'].value });
+      if (offeredScore === attempt) {
+        elements['score-name'].disabled = true;
+        text(elements['score-status'], 'Đã lưu điểm.');
+      }
+    } catch (error) {
+      if (offeredScore === attempt) {
+        elements['save-score'].disabled = false;
+        text(elements['score-status'], error.message);
+      }
+    }
   }
 
   function showIntro() {
@@ -241,6 +385,7 @@ function run(view) {
     if (game.state === 'won' && campaign.night === TOTAL_NIGHTS) {
       showPanel('dawn', nightTitle(), 'Bình Minh',
         `Ánh sáng đã trở lại cả ba hòn đảo. Tổng điểm: ${score}.`, [['Về menu', showMenu]]);
+      offerScore(score);
     } else if (game.state === 'won') {
       showPanel('result', nightTitle(), 'Đảo đã sáng',
         `Điểm Đêm ${campaign.night}: ${game.score}. Tổng điểm: ${score}.`,
@@ -249,6 +394,7 @@ function run(view) {
       const reason = game.reason === 'dawn' ? 'Đảo còn quá ít đèn sáng lúc bình minh.' : 'Mây đã hết Ngọn Lửa.';
       showPanel('result', nightTitle(), 'Đèn đã tắt', `${reason} Điểm Đêm này: ${game.score}.`,
         [['Chơi lại Đêm', begin], ['Về menu', showMenu]]);
+      offerScore(score);
     }
   }
 
@@ -269,12 +415,12 @@ function run(view) {
       if (name === 'player_hit') notice(data.by === 'fall' ? 'Mây vừa rơi khỏi đảo' : 'Bóng Mực chạm vào Mây', true);
       if (name === 'charm_picked') notice('Mây nhặt được Bùa Gió');
       if (name === 'drifter_steal') notice(`Gió Lạc lấy ${data.amount} đom đóm`);
+      if (name === 'shade_spawned') spawnIndicator = { id: data.id, until: game.simTick + 180 };
       if (name === 'game_over') showResult();
     }
     if (game.jumped) sound.cue('jump');
     if (!wasWarning && game.wind.warning) {
       sound.cue('wind');
-      notice('Gió mạnh sắp tới', true);
     }
   }
 
@@ -310,12 +456,18 @@ function run(view) {
     return !game.previousInput[action] && pending.delete(action);
   }
 
+  function movementHeld(action) {
+    for (const pressed of keys.values()) {
+      if (action === pressed) return 1;
+    }
+    return 0;
+  }
+
   function step() {
-    if (keys.has('ArrowLeft')) cameraYaw += 1.75 * tickLength;
-    if (keys.has('ArrowRight')) cameraYaw -= 1.75 * tickLength;
+    if (movementHeld('cameraLeft')) cameraYaw += 1.75 * tickLength;
+    if (movementHeld('cameraRight')) cameraYaw -= 1.75 * tickLength;
     processInput({
-      move: [Number(keys.has('KeyA')) - Number(keys.has('KeyD')),
-        Number(keys.has('KeyW') || keys.has('ArrowUp')) - Number(keys.has('KeyS') || keys.has('ArrowDown'))],
+      move: [movementHeld('left') - movementHeld('right'), movementHeld('up') - movementHeld('down')],
       cam_yaw_deg: cameraYaw * 180 / Math.PI,
       jump: takeAction('jump'), interact: takeAction('interact'), pulse: takeAction('pulse'),
       dash: takeAction('dash'), pause: false,
@@ -356,36 +508,71 @@ function run(view) {
       ? game.simTick * tickLength : timestamp / 1000;
     view.draw(game, cameraYaw, visualTime, game.state === 'paused' ? 0 : delta);
     if (mode === 'playing') {
-      const hint = view.hint(nearestLantern(game.lanterns, game.player.pos, (lantern) => !lantern.lit));
-      elements.direction.hidden = !hint;
-      if (hint) {
-        elements.direction.style.left = `${hint.x}%`;
-        elements.direction.style.top = `${hint.y}%`;
-        elements.direction.style.setProperty('--turn', `${hint.angle}deg`);
-      }
+      placeIndicator(elements.direction, view.hint(nearestLantern(game.lanterns, game.player.pos,
+        (lantern) => !lantern.lit)));
+      const shade = spawnIndicator && game.simTick < spawnIndicator.until
+        ? game.shades.find(({ id }) => id === spawnIndicator.id) : null;
+      placeIndicator(elements['shade-direction'], view.hint(shade, true, 0));
       updateBenchmark(timestamp);
     }
     requestAnimationFrame(frame);
   }
 
+  function placeIndicator(node, hint) {
+    node.hidden = !hint;
+    if (!hint) return;
+    node.style.left = `${hint.x}%`;
+    node.style.top = `${hint.y}%`;
+    node.style.setProperty('--turn', `${hint.angle}deg`);
+  }
+
   elements['pause-button'].addEventListener('click', pause);
+  elements['score-form'].addEventListener('submit', submitScore);
+  for (const [action, label] of actions) {
+    const row = document.createElement('div');
+    row.className = 'key-row';
+    const name = document.createElement('span');
+    name.textContent = label;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'secondary';
+    button.addEventListener('click', () => {
+      captureAction = action;
+      text(elements['key-status'], `Bấm phím mới cho ${label}.`);
+    });
+    row.append(name, button);
+    elements['key-list'].append(row);
+    keyButtons.set(action, button);
+  }
   for (const key of ['volume', 'sensitivity']) elements[key].addEventListener('input', updateSettings);
-  elements['distinct-colors'].addEventListener('change', () => {
-    updateSettings();
-    view.setDistinctColors(settings.distinctColors);
-  });
+  for (const key of ['distinct-colors', 'large-text', 'reduced-motion']) {
+    elements[key].addEventListener('change', () => {
+      updateSettings();
+      view.setDistinctColors(settings.distinctColors);
+      view.setReducedMotion(settings.reducedMotion);
+    });
+  }
   window.addEventListener('keydown', (event) => {
-    if ((event.code === 'Escape' || event.code === 'KeyP') && !event.repeat) {
+    if (mode === 'bindings' && captureAction) {
+      captureBinding(event);
+      return;
+    }
+    if ((mode === 'settings' || mode === 'bindings') && event.code === 'Escape' && !event.repeat) {
+      event.preventDefault();
+      settingsBack();
+      return;
+    }
+    const action = actionForCode(settings.bindings, event.code);
+    if (action === 'pause' && !event.repeat && (mode === 'playing' || mode === 'paused')) {
       if (mode === 'playing') pause();
-      else if (mode === 'paused') resume();
-      else if (mode === 'settings' && event.code === 'Escape') settingsBack();
+      else resume();
       event.preventDefault();
       return;
     }
-    if (mode !== 'playing' || (!movement.has(event.code) && !actions.has(event.code))) return;
+    if (mode !== 'playing' || (!movement.has(action) && !edgeActions.has(action))) return;
     event.preventDefault();
-    if (movement.has(event.code)) keys.add(event.code);
-    if (!event.repeat && actions.has(event.code)) pending.add(actions.get(event.code));
+    if (movement.has(action)) keys.set(event.code, action);
+    if (!event.repeat && edgeActions.has(action)) pending.add(action);
   });
   window.addEventListener('keyup', (event) => keys.delete(event.code));
   window.addEventListener('blur', clearInput);
@@ -404,6 +591,7 @@ function run(view) {
   }
   setSettingsValues();
   view.setDistinctColors(settings.distinctColors);
+  view.setReducedMotion(settings.reducedMotion);
   showMenu();
   requestAnimationFrame(frame);
 }

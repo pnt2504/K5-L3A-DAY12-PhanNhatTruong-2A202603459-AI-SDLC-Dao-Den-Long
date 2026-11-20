@@ -1,9 +1,11 @@
 {
-  "contract_version": "1.2",
+  "contract_version": "1.3",
   "team": "2A202603459-PhanNhatTruong",
-  "build_cmd": "npm ci && npm run build",
-  "run_cmd": "npm run preview -- --open",
+  "build_cmd": "npm ci && npm run build && node scripts/ensure-bench-browser.js",
+  "run_cmd": "node scripts/run.js",
   "headless_cmd": "node src/headless.js",
+  "bench_cmd": "node scripts/bench.js",
+  "soak_cmd": "node --expose-gc scripts/soak.js",
   "tuning": {
     "player_speed": 6,
     "carry_capacity": 10,

@@ -80,7 +80,7 @@ function makeSky(scene) {
   scene.add(cloud);
 }
 
-function makeIsland(scene, { x, z, radius }, night) {
+function makeIsland(scene, { x, z, radius }, night, decorativePath) {
   const tile = new THREE.Group();
   tile.position.set(x, 0, z);
   scene.add(tile);
@@ -92,11 +92,13 @@ function makeIsland(scene, { x, z, radius }, night) {
     material('#313447'), x, -10, z);
 
   const sand = material(palette.sand);
-  const path = new THREE.Mesh(new THREE.RingGeometry(night === 1 ? 23.9 : radius - 7,
-    night === 1 ? 26.2 : radius - 5.7, 64), sand);
-  path.rotation.x = -Math.PI / 2;
-  path.position.y = 0.013;
-  tile.add(path);
+  if (decorativePath) {
+    const path = new THREE.Mesh(new THREE.RingGeometry(night === 1 ? 23.9 : radius - 7,
+      night === 1 ? 26.2 : radius - 5.7, 64), sand);
+    path.rotation.x = -Math.PI / 2;
+    path.position.y = 0.013;
+    tile.add(path);
+  }
   const clearing = makeMesh(tile, new THREE.CircleGeometry(4.1, 15), sand, 0, 0.02, 0);
   clearing.rotation.x = -Math.PI / 2;
 
@@ -169,7 +171,7 @@ function raisedRing(scene) {
 function decorateWorld(scene, game) {
   const { map, night } = game;
   scene.userData.terraceWall = null;
-  for (const island of map.islands) makeIsland(scene, island, night);
+  for (const island of map.islands) makeIsland(scene, island, night, !game.standardBenchmark);
   if (map.bridge) {
     const { minX, maxX, halfWidth } = map.bridge;
     const plank = new THREE.BoxGeometry(0.46, 0.26, halfWidth * 2);
@@ -324,6 +326,70 @@ function makeLantern(scene, glow) {
   return { group, body, intact, torn, paper, halo, circle, gauge, gaugeFill };
 }
 
+function renderShades(scene, glow) {
+  const max = 200;
+  const bodies = new THREE.InstancedMesh(sphere, material('#FFFFFF'), max);
+  const eyes = new THREE.InstancedMesh(new THREE.SphereGeometry(0.062, 8, 6),
+    new THREE.MeshBasicMaterial({ color: palette.purple, toneMapped: false }), max * 2);
+  const haloGeometry = new THREE.BufferGeometry();
+  const halos = new THREE.BufferAttribute(new Float32Array(max * 3), 3).setUsage(THREE.DynamicDrawUsage);
+  haloGeometry.setAttribute('position', halos);
+  const glowMaterial = new THREE.PointsMaterial({ color: palette.purple, size: 3.65, map: glow, opacity: 0.8,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false, toneMapped: false });
+  const haloPoints = new THREE.Points(haloGeometry, glowMaterial);
+  for (const item of [bodies, eyes, haloPoints]) item.frustumCulled = false;
+  bodies.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  eyes.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  scene.add(bodies, eyes, haloPoints);
+  const dark = new THREE.Color(palette.shade);
+  const stunned = new THREE.Color(palette.stunned);
+  const body = new THREE.Object3D();
+  const eye = new THREE.Object3D();
+  return {
+    draw(shades, seconds, playerX, playerZ) {
+      const count = Math.min(max, shades.length);
+      bodies.count = count;
+      eyes.count = count * 2;
+      haloGeometry.setDrawRange(0, count);
+      for (let index = 0; index < count; index += 1) {
+        const shade = shades[index];
+        const [x, baseY, z] = shade.pos;
+        const y = baseY + 0.13 * Math.sin(seconds * 3 + index);
+        const scale = shade.state === 'spawning' ? 0.7 + 0.15 * Math.sin(seconds * 20) : 1;
+        const angle = Math.atan2(playerX - x, playerZ - z);
+        const sin = Math.sin(angle);
+        const cos = Math.cos(angle);
+        body.position.set(x, y, z);
+        body.rotation.y = angle;
+        body.scale.set(0.57 * scale, 0.93 * scale, 0.53 * scale);
+        body.updateMatrix();
+        bodies.setMatrixAt(index, body.matrix);
+        bodies.setColorAt(index, shade.state === 'stunned' ? stunned : dark);
+        for (let side = 0; side < 2; side += 1) {
+          const dx = (side * 2 - 1) * 0.16 * scale;
+          const dz = 0.49 * scale;
+          eye.position.set(x + dx * cos + dz * sin, y + 0.14 * scale, z - dx * sin + dz * cos);
+          eye.scale.setScalar(scale);
+          eye.updateMatrix();
+          eyes.setMatrixAt(index * 2 + side, eye.matrix);
+        }
+        halos.setXYZ(index, x, y, z);
+      }
+      if (count > 0) {
+        bodies.instanceMatrix.needsUpdate = true;
+        bodies.instanceColor.needsUpdate = true;
+        eyes.instanceMatrix.needsUpdate = true;
+        halos.needsUpdate = true;
+      }
+    },
+    setDistinctColors(enabled) {
+      const accent = enabled ? palette.accessibleShade : palette.purple;
+      eyes.material.color.set(accent);
+      glowMaterial.color.set(accent);
+    },
+  };
+}
+
 export function createView(container, game) {
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(1);
@@ -340,16 +406,16 @@ export function createView(container, game) {
   makeSky(scene);
 
   const glow = makeGlow();
+  const shadeView = renderShades(scene, glow);
   const player = makePlayer(scene, glow);
   const terrain = new THREE.Group();
   scene.add(terrain);
   let night = 0;
   let lanterns = [];
-  const shades = new Map();
   const drifters = new Map();
   const charms = new Map();
   const moteGeometry = new THREE.BufferGeometry();
-  const motePositions = new THREE.BufferAttribute(new Float32Array(72 * 3), 3);
+  const motePositions = new THREE.BufferAttribute(new Float32Array(128 * 3), 3);
   motePositions.setUsage(THREE.DynamicDrawUsage);
   moteGeometry.setAttribute('position', motePositions);
   for (const [color, size, opacity] of [[palette.moteGlow, 1.45, 0.86], [palette.moteCore, 0.36, 1]]) {
@@ -360,11 +426,6 @@ export function createView(container, game) {
     points.frustumCulled = false;
     scene.add(points);
   }
-  const shadeCore = material(palette.shade);
-  const shadeStunned = material(palette.stunned);
-  const shadeEye = new THREE.SphereGeometry(0.062, 8, 6);
-  const shadeEyes = new THREE.MeshBasicMaterial({ color: palette.purple, toneMapped: false });
-  let shadeAccent = palette.purple;
   const drifterBody = new THREE.PlaneGeometry(1.32, 0.74, 6, 2);
   const drifterMaterial = new THREE.MeshBasicMaterial({ color: palette.drifter, side: THREE.DoubleSide,
     transparent: true, opacity: 0.9 });
@@ -384,6 +445,7 @@ export function createView(container, game) {
   wave.visible = false;
   scene.add(wave);
   let waveAge = Infinity;
+  let reducedMotion = false;
   const hintPoint = new THREE.Vector3();
   const localPoint = new THREE.Vector3();
 
@@ -416,7 +478,7 @@ export function createView(container, game) {
   }
   load(game);
 
-  function draw(gameState, yaw, seconds, delta) {
+  function draw(gameState, yaw, seconds, delta, orbit) {
     load(gameState);
     const { pos, yaw: facing, invulnerableUntil } = gameState.player;
     const [x, y, z] = pos;
@@ -427,14 +489,19 @@ export function createView(container, game) {
       terraceWall.opacity = belowTerrace ? 0.14 : 1;
       terraceWall.depthWrite = !belowTerrace;
     }
-    const blink = gameState.simTick < invulnerableUntil && Math.floor(gameState.simTick / 5) % 2 === 0;
+    const blink = !reducedMotion && gameState.simTick < invulnerableUntil && Math.floor(gameState.simTick / 5) % 2 === 0;
     player.body.position.set(x, y, z);
     player.body.rotation.y = facing;
     player.body.visible = !blink && gameState.player.respawnAt === null;
     const walking = gameState.player.grounded && Math.hypot(gameState.player.vel[0], gameState.player.vel[2]) > 0.01;
     player.shoes.forEach((shoe, index) => { shoe.rotation.x = walking ? Math.sin(seconds * 13 + index * Math.PI) * 0.55 : 0; });
-    camera.position.set(x - Math.sin(yaw) * 8.8, Math.max(-3.5, y) + 4.7, z - Math.cos(yaw) * 8.8);
-    camera.lookAt(x + Math.sin(yaw) * 2.1, Math.max(-4, y) + 1.03, z + Math.cos(yaw) * 2.1);
+    if (orbit) {
+      camera.position.fromArray(orbit);
+      camera.lookAt(0, 0, 0);
+    } else {
+      camera.position.set(x - Math.sin(yaw) * 8.8, Math.max(-3.5, y) + 4.7, z - Math.cos(yaw) * 8.8);
+      camera.lookAt(x + Math.sin(yaw) * 2.1, Math.max(-4, y) + 1.03, z + Math.cos(yaw) * 2.1);
+    }
 
     ambient.intensity = 0.15 + 0.55 * gameState.lanterns.filter(({ lit }) => lit).length / gameState.lanterns.length;
     gameState.lanterns.forEach((lantern, index) => {
@@ -469,24 +536,7 @@ export function createView(container, game) {
     moteGeometry.setDrawRange(0, visibleMotes);
     motePositions.needsUpdate = true;
 
-    syncModels(shades, gameState.shades, () => {
-      const group = new THREE.Group();
-      const halo = glowSprite(glow, shadeAccent, 3.65, 0.8);
-      group.add(halo);
-      const core = makeMesh(group, sphere, shadeCore, 0, 0, 0);
-      core.scale.set(0.57, 0.93, 0.53);
-      for (const side of [-1, 1]) {
-        makeMesh(group, shadeEye, shadeEyes, side * 0.16, 0.14, 0.49);
-      }
-      scene.add(group);
-      return group;
-    }, (model, shade, index) => {
-      model.position.fromArray(shade.pos);
-      model.position.y += Math.sin(seconds * 3 + index) * 0.13;
-      model.rotation.y = Math.atan2(x - shade.pos[0], z - shade.pos[2]);
-      model.children[1].material = shade.state === 'stunned' ? shadeStunned : shadeCore;
-      model.scale.setScalar(shade.state === 'spawning' ? 0.7 + 0.15 * Math.sin(seconds * 20) : 1);
-    });
+    shadeView.draw(gameState.shades, seconds, x, z);
 
     syncModels(drifters, gameState.drifters, () => {
       const ribbon = new THREE.Mesh(drifterBody.clone(), drifterMaterial);
@@ -531,7 +581,7 @@ export function createView(container, game) {
     }
 
     waveAge += delta;
-    wave.visible = waveAge < 0.48;
+    wave.visible = waveAge < 0.48 && !reducedMotion;
     if (wave.visible) {
       wave.scale.setScalar(0.4 + waveAge / 0.48 * (tuning.pulse_radius - 0.4));
       wave.material.opacity = 0.83 * (1 - waveAge / 0.48);
@@ -559,20 +609,27 @@ export function createView(container, game) {
 
   return {
     draw,
-    setDistinctColors(enabled) {
-      shadeAccent = enabled ? palette.accessibleShade : palette.purple;
-      shadeEyes.color.set(shadeAccent);
-      for (const shade of shades.values()) shade.children[0].material.color.set(shadeAccent);
+    setDistinctColors: shadeView.setDistinctColors,
+    setReducedMotion(enabled) {
+      reducedMotion = enabled;
     },
-    hint(lantern) {
-      if (!lantern) return null;
-      hintPoint.fromArray(lantern.pos);
-      hintPoint.y += 2.4;
+    rendererName() {
+      const context = renderer.getContext();
+      const extension = context.getExtension('WEBGL_debug_renderer_info');
+      const device = extension ? context.getParameter(extension.UNMASKED_RENDERER_WEBGL)
+        : context.getParameter(context.RENDERER);
+      return `Three.js r${THREE.REVISION} · WebGL 2 · ${device}`;
+    },
+    hint(target, forceEdge = false, lift = 2.4) {
+      if (!target) return null;
+      hintPoint.fromArray(target.pos);
+      hintPoint.y += lift;
       localPoint.copy(hintPoint).applyMatrix4(camera.matrixWorldInverse);
       hintPoint.project(camera);
-      if (localPoint.z < 0 && Math.abs(hintPoint.x) < 0.92 && Math.abs(hintPoint.y) < 0.86) return null;
+      if (!forceEdge && localPoint.z < 0 && Math.abs(hintPoint.x) < 0.92 && Math.abs(hintPoint.y) < 0.86) return null;
       const dx = localPoint.z < 0 ? hintPoint.x : localPoint.x;
-      const dy = localPoint.z < 0 ? hintPoint.y : -Math.abs(localPoint.y) - 2;
+      let dy = localPoint.z < 0 ? hintPoint.y : -Math.abs(localPoint.y) - 2;
+      if (forceEdge && Math.max(Math.abs(dx), Math.abs(dy)) < 0.02) dy = 1;
       const scale = 1 / Math.max(0.01, Math.abs(dx), Math.abs(dy));
       return { x: 50 + dx * scale * 42, y: 49 - dy * scale * 33,
         angle: Math.atan2(dx, dy) * 180 / Math.PI };

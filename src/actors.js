@@ -266,9 +266,8 @@ function moveWanderingShade(game, shade, speed) {
   }
 }
 
-export function moveActors(game) {
+export function moveActors(game, reachable = game.player.respawnAt === null) {
   const { player, simTick } = game;
-  const reachable = player.respawnAt === null;
   for (const shade of game.shades) {
     if (shade.ejection) {
       const { target, until } = shade.ejection;
