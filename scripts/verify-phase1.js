@@ -5,6 +5,9 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import contract from '../game.contract.json' with { type: 'json' };
+
+assert.equal(contract.contract_version, '1.0', 'Chạy script này từ checkout của tag phase-1');
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const proof = join(root, 'docs', 'proof', 'phase-1');

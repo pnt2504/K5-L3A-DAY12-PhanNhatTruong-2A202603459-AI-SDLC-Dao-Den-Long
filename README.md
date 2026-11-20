@@ -1,6 +1,6 @@
 # Đảo Đèn Lồng
 
-Trong **Đêm 1 · Đảo Bến**, bạn điều khiển Mây đi gom đom đóm, mang chúng về thắp năm Đèn Lồng Lớn và né Bóng Mực. Bản Phase 1 dùng Test Contract v1.0.
+Bạn điều khiển Mây gom đom đóm, thắp đèn và né Bóng Mực để đưa ánh sáng trở lại ba hòn đảo. Bản Phase 2 dùng Test Contract v1.1.
 
 ## Cài và chơi
 
@@ -12,32 +12,35 @@ npm run build
 npm run preview -- --open
 ```
 
-Mở địa chỉ Vite in ra nếu trình duyệt chưa bật. Nhấn **Bắt đầu**. Có thể thêm `?seed=12` vào URL để tái hiện vị trí đom đóm và lịch sinh Bóng Mực trong bài kiểm chứng. **Chơi lại** dùng cùng seed.
+Mở địa chỉ Vite in ra nếu trình duyệt chưa bật. Chọn **Bắt đầu** rồi **Vào đêm**. Có thể thêm `?seed=12` vào URL để tái tạo bố cục đầu Đêm 1 trong bài kiểm chứng. **Chơi lại Đêm** dùng cùng seed. Âm lượng và độ nhạy chuột được lưu qua các lần mở game.
 
 | Phím | Hành động |
 |---|---|
 | **WASD** | Di chuyển theo camera |
 | **Kéo chuột** hoặc **← / →** | Xoay camera |
 | **Space** | Nhảy |
-| **E** | Nạp vào đèn chưa sáng trong tầm 2 m. Một đèn cần 5 đom đóm và ghi nhớ các lần nạp |
-| **Q** | Tỏa Sáng. Tốn 3 đom đóm, đẩy và làm choáng Bóng Mực trong tầm 5 m, hồi chiêu 2 giây |
+| **Shift** | Lướt trong 0,2 giây. Hồi chiêu 1,5 giây, hoặc lướt liên tiếp khi có Bùa Gió |
+| **E** | Nạp vào đèn chưa sáng trong tầm 2 m. Mỗi đèn cần 10 đom đóm và ghi nhớ tiến độ |
+| **Q** | Tỏa Sáng. Tốn 3 đom đóm, đẩy và làm choáng Bóng Mực trong tầm 5 m. Hồi chiêu 3 giây |
+| **Esc** hoặc **P** | Tạm dừng hoặc tiếp tục |
 
-Có 3 Ngọn Lửa và 4 phút. Thắp đủ 5 đèn để thắng. Hết lửa hoặc hết giờ thì thua. Đèn đã thắp tạo vùng an toàn bán kính 5 m. Bị Bóng Mực chạm làm rơi một nửa túi. Rơi khỏi đảo làm mất toàn bộ túi, mất một lửa và đưa bạn về điểm xuất phát.
+Đảo Bến, Đảo Cau và Đảo Chuông lần lượt có **5, 6 và 7 đèn** với **5:00, 5:30 và 6:00**. Mỗi đêm bắt đầu với 3 Ngọn Lửa. Đèn đã thắp tạo vùng an toàn bán kính 6 m với Bóng Mực. Gió Lạc xuất hiện ở hai đêm sau và cướp đom đóm khi đuổi kịp. Mây có thể dùng cầu tre hoặc bục nhảy ở Đảo Cau, rồi dùng dốc và bục nhảy để lên tầng cao ở Đảo Chuông.
 
-Nhặt mỗi đom đóm được **10 điểm**, thắp mỗi đèn được **100 điểm** và làm choáng mỗi Bóng Mực được **5 điểm**. Khi thắng, cộng **2 điểm** mỗi giây nguyên còn lại và **50 điểm** mỗi Ngọn Lửa còn lại.
+Mỗi đom đóm **nạp vào đèn** được **10 điểm**, thắp mỗi đèn được **100 điểm** và mỗi Bóng Mực trúng Tỏa Sáng được **5 điểm**. Khi thắng, cộng **2 điểm** mỗi giây nguyên còn lại và **50 điểm** mỗi Ngọn Lửa còn lại. Màn Bình Minh hiển thị tổng điểm các đêm đã thắng.
 
-## Kiểm chứng Phase 1
+## Kiểm chứng Phase 2
 
 ```sh
 npm test
-node src/headless.js --seed 12 --night 1 --ticks 7200 --inputs test/fixtures/full-night.inputs.json --out out.jsonl
-node scripts/verify-phase1.js
+node src/headless.js --seed 12 --night 1 --ticks 18000 --inputs test/fixtures/full-night.inputs.json --out out.jsonl
+node scripts/verify-phase2.js
 ```
 
-Ví dụ headless đi hết Đêm 1 từ bản đồ mặc định, không cần cửa sổ hay GPU. `game.contract.json` khai báo các lệnh và tuning.
+CLI nhận `--night 1`, `2` hoặc `3`, cùng các tùy chọn `--scenario`, `--inputs` và `--snapshot-every`. Ví dụ trên đi hết Đêm 1 từ bản đồ mặc định. Tệp `game.contract.json` khai báo lệnh chạy và thông số.
 
-- [Giả định, tiêu chí nghiệm thu, nhật ký AI và retro](docs/notes/phase-1.md)
-- [Kết quả và cách tái tạo bằng chứng](docs/proof/phase-1/README.md)
+- [Tiêu chí nghiệm thu, giả định và nhật ký Phase 2](docs/notes/phase-2.md)
+- [Kết quả và cách tái tạo bằng chứng Phase 2](docs/proof/phase-2/README.md)
+- [Bằng chứng Phase 1](docs/proof/phase-1/README.md). Chạy lại bằng script v1.0 tại tag `phase-1`.
 - [Hướng dẫn cho agent](AGENTS.md) · [Nguồn và công cụ](CREDITS.md)
 
 ## Sáng tạo của tôi

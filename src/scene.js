@@ -1,12 +1,27 @@
 import * as THREE from 'three';
-import { ISLAND_RADIUS, tuning } from './game.js';
+import { tuning } from './rules.js';
+import { RAMP_WIDTH, TOWER_RADIUS } from './world.js';
 
 const palette = {
-  fog: '#30375b',
-  ground: '#354b43',
+  sky: '#0E1430',
+  fog: '#1B2350',
+  ground: '#2F5D50',
+  sand: '#C9B48A',
+  wood: '#6B4A2F',
+  cloud: '#12384A',
   rock: '#384052',
-  gold: '#ffd389',
-  purple: '#a785eb',
+  gold: '#F2C14E',
+  lanternOn: '#FFB347',
+  lanternCore: '#FFE9B0',
+  lanternOff: '#5B5F6E',
+  moteCore: '#FFF6C2',
+  moteGlow: '#FFE58A',
+  shade: '#120A1A',
+  purple: '#7A3CFF',
+  stunned: '#3A3450',
+  player: '#E8E2D0',
+  red: '#C8102E',
+  drifter: '#8FA3B8',
 };
 
 const material = (color) => new THREE.MeshStandardMaterial({ color, roughness: 0.9, flatShading: true });
@@ -49,9 +64,9 @@ function makeSky(scene) {
     new THREE.MeshBasicMaterial({ color: '#f5d9b4', fog: false }), -22, 8.8, 83);
   moonDisc.material.toneMapped = false;
 
-  const cloud = new THREE.InstancedMesh(sphere, material('#747a9c'), 128);
+  const cloud = new THREE.InstancedMesh(sphere, material(palette.cloud), 96);
   const cloudForm = new THREE.Object3D();
-  for (let index = 0; index < 128; index += 1) {
+  for (let index = 0; index < cloud.count; index += 1) {
     const yaw = random() * Math.PI * 2;
     const radius = 37 + random() * 74;
     cloudForm.position.set(Math.cos(yaw) * radius, -5.7 + random() * 1.6, Math.sin(yaw) * radius);
@@ -59,55 +74,134 @@ function makeSky(scene) {
     cloudForm.rotation.y = yaw;
     cloudForm.updateMatrix();
     cloud.setMatrixAt(index, cloudForm.matrix);
-    cloud.setColorAt(index, new THREE.Color().setHSL(0.61, 0.19, 0.38 + random() * 0.17));
   }
   scene.add(cloud);
 }
 
-function makeIsland(scene) {
-  const random = decorationRandom(2516);
-  const radius = ISLAND_RADIUS;
-  makeMesh(scene, new THREE.CylinderGeometry(radius, radius - 4, 6, 64),
-    [material(palette.rock), material(palette.ground), material(palette.rock)], 0, -3, 0);
+function makeIsland(scene, { x, z, radius }, night) {
+  const tile = new THREE.Group();
+  tile.position.set(x, 0, z);
+  scene.add(tile);
+  const random = decorationRandom(2516 + x);
+  const rock = material(palette.rock);
+  makeMesh(tile, new THREE.CylinderGeometry(radius, radius - 4, 6, 96),
+    [rock, material(palette.ground), rock], 0, -3, 0);
   makeMesh(scene, new THREE.CylinderGeometry(radius - 4, 12, 9, 28),
-    material('#313447'), 0, -10, 0);
+    material('#313447'), x, -10, z);
 
-  const path = new THREE.Mesh(new THREE.RingGeometry(20.3, 23.3, 64),
-    material('#695e52'));
+  const sand = material(palette.sand);
+  const path = new THREE.Mesh(new THREE.RingGeometry(night === 1 ? 23.9 : radius - 7,
+    night === 1 ? 26.2 : radius - 5.7, 64), sand);
   path.rotation.x = -Math.PI / 2;
   path.position.y = 0.013;
-  scene.add(path);
-  const clearing = makeMesh(scene, new THREE.CircleGeometry(4.1, 15),
-    material('#716658'), 0, 0.02, 0);
+  tile.add(path);
+  const clearing = makeMesh(tile, new THREE.CircleGeometry(4.1, 15), sand, 0, 0.02, 0);
   clearing.rotation.x = -Math.PI / 2;
 
-  const grass = new THREE.InstancedMesh(new THREE.ConeGeometry(0.12, 0.69, 3), material('#809777'), 760);
+  const grass = new THREE.InstancedMesh(new THREE.ConeGeometry(0.12, 0.69, 3), material(palette.ground), 360);
   const blade = new THREE.Object3D();
   for (let index = 0; index < grass.count; index += 1) {
     const angle = random() * Math.PI * 2;
-    let distance = 5 + Math.sqrt(random()) * 30.2;
-    if (distance > 20 && distance < 24) distance -= 4;
+    let distance = 5 + Math.sqrt(random()) * (radius - 6);
+    if (distance > 23 && distance < 26) distance -= 4;
     blade.position.set(Math.cos(angle) * distance, 0.12, Math.sin(angle) * distance);
     blade.scale.set(0.45 + random() * 0.8, 0.37 + random() * 0.64, 0.6);
     blade.rotation.set((random() - 0.5) * 0.75, angle, (random() - 0.5) * 0.7);
     blade.updateMatrix();
     grass.setMatrixAt(index, blade.matrix);
-    grass.setColorAt(index, new THREE.Color().setHSL(0.29 + random() * 0.12, 0.23, 0.36 + random() * 0.28));
   }
-  scene.add(grass);
+  tile.add(grass);
 
-  const bark = material('#675649');
-  const leaves = [material('#587465'), material('#546974'), material('#88816d')];
-  for (let index = 0; index < 28; index += 1) {
-    const angle = index * Math.PI * 2 / 28 + random() * 0.19;
-    const distance = 28 + random() * 6.8;
-    const group = new THREE.Group();
-    group.position.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
+  const trunks = new THREE.InstancedMesh(stem, material(palette.wood), 20);
+  const leaves = new THREE.InstancedMesh(sphere, material('#587465'), trunks.count * 2);
+  const tree = new THREE.Object3D();
+  for (let index = 0; index < trunks.count; index += 1) {
+    const angle = index * Math.PI * 2 / trunks.count + random() * 0.19;
+    const distance = radius - 7 + random() * 5.6;
+    const treeX = Math.cos(angle) * distance;
+    const treeZ = Math.sin(angle) * distance;
     const height = 2.1 + random() * 2.9;
-    makeMesh(group, stem, bark, 0, height / 2, 0).scale.y = height;
-    makeMesh(group, sphere, leaves[index % leaves.length], 0.34, height, 0).scale.set(1.35, 1.42, 1.2);
-    makeMesh(group, sphere, leaves[index % leaves.length], -0.63, height - 0.65, 0.2).scale.set(0.94, 1.1, 1);
-    scene.add(group);
+    tree.position.set(treeX, height / 2, treeZ);
+    tree.scale.set(1, height, 1);
+    tree.updateMatrix();
+    trunks.setMatrixAt(index, tree.matrix);
+    for (let branch = 0; branch < 2; branch += 1) {
+      tree.position.set(treeX + (branch === 0 ? 0.34 : -0.63), height - branch * 0.65, treeZ + branch * 0.2);
+      tree.scale.set(1.35 - branch * 0.4, 1.42 - branch * 0.32, 1.2 - branch * 0.2);
+      tree.updateMatrix();
+      leaves.setMatrixAt(index * 2 + branch, tree.matrix);
+      leaves.setColorAt(index * 2 + branch, new THREE.Color(branch === 0 ? '#abc6b1' : '#909bab'));
+    }
+  }
+  tile.add(trunks, leaves);
+}
+
+function solid(points, indices) {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(points.flat(), 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+function raisedRing(scene) {
+  const positions = [];
+  const triangles = [];
+  for (let i = 0; i <= 48; i += 1) {
+    const angle = i * Math.PI / 48;
+    for (const [r, y] of [[12, 0], [12, 3], [24, 3], [24, 0]]) {
+      positions.push([r * Math.cos(angle), y, r * Math.sin(angle)]);
+    }
+    if (i === 0) continue;
+    for (let edge = 0; edge < 3; edge += 1) {
+      const a = (i - 1) * 4 + edge;
+      triangles.push(a, a + 1, a + 4, a + 1, a + 5, a + 4);
+    }
+  }
+  triangles.push(0, 2, 1, 0, 3, 2, 192, 193, 194, 192, 194, 195);
+  const surface = material(palette.ground);
+  surface.side = THREE.DoubleSide;
+  makeMesh(scene, solid(positions, triangles), surface, 0, 0, 0);
+}
+
+function decorateWorld(scene, game) {
+  const { map, night } = game;
+  scene.userData.terraceWall = null;
+  for (const island of map.islands) makeIsland(scene, island, night);
+  if (map.bridge) {
+    const { minX, maxX, halfWidth } = map.bridge;
+    const plank = new THREE.BoxGeometry(0.46, 0.26, halfWidth * 2);
+    const planks = new THREE.InstancedMesh(plank, material(palette.wood), 36);
+    const matrix = new THREE.Matrix4();
+    for (let index = 0; index < planks.count; index += 1) {
+      planks.setMatrixAt(index, matrix.makeTranslation(minX + (maxX - minX) * (index + 0.5) / planks.count, -0.13, 0));
+    }
+    scene.add(planks);
+  }
+  if (map.ramps) {
+    raisedRing(scene);
+    const wall = material(palette.rock);
+    scene.userData.terraceWall = wall;
+    makeMesh(scene, new THREE.CylinderGeometry(8, 8, 6, 64),
+      [wall, material(palette.ground), wall], 0, 3, 0);
+    const timber = material(palette.wood);
+    makeMesh(scene, new THREE.CylinderGeometry(TOWER_RADIUS, TOWER_RADIUS, 6.7, 12), timber, 0, 9.35, 0);
+    makeMesh(scene, new THREE.ConeGeometry(TOWER_RADIUS, 1.3, 12), material(palette.red), 0, 13.35, 0);
+    for (const { cos, sin } of map.ramps) {
+      const points = [[24, 3, -1], [24, 3, 1], [30, 0, -1], [30, 0, 1], [24, 0, -1], [24, 0, 1]]
+        .map(([along, y, side]) => [along * cos - side * RAMP_WIDTH / 2 * sin, y,
+          along * sin + side * RAMP_WIDTH / 2 * cos]);
+      const surface = material(palette.sand);
+      surface.side = THREE.DoubleSide;
+      makeMesh(scene, solid(points, [0, 1, 2, 2, 1, 3, 0, 2, 4, 1, 5, 3]), surface, 0, 0, 0);
+    }
+  }
+  for (const pad of map.pads) {
+    const [x, y, z] = pad.pos;
+    makeMesh(scene, new THREE.CylinderGeometry(1, 1, 0.12, 24), material(palette.wood), x, y + 0.02, z);
+    const mark = makeMesh(scene, new THREE.RingGeometry(0.65, 0.87, 24),
+      new THREE.MeshBasicMaterial({ color: palette.gold }), x, y + 0.09, z);
+    mark.rotation.x = -Math.PI / 2;
   }
 }
 
@@ -140,8 +234,8 @@ function glowSprite(texture, color, size, intensity) {
 function makePlayer(scene, glow) {
   const body = new THREE.Group();
   scene.add(body);
-  const cream = material('#efe2bf');
-  const red = material('#bd5060');
+  const cream = material(palette.player);
+  const red = material(palette.red);
   const dark = material('#2a2a45');
   makeMesh(body, new THREE.CylinderGeometry(0.29, 0.5, 0.83, 7), cream, 0, 0.83, 0);
   makeMesh(body, sphere, material('#c58f65'), 0, 1.41, 0).scale.setScalar(0.29);
@@ -152,7 +246,7 @@ function makePlayer(scene, glow) {
     .rotation.z = -0.24;
   const shoes = [-0.2, 0.2].map((x) =>
     makeMesh(body, new THREE.BoxGeometry(0.23, 0.28, 0.33), dark, x, 0.16, 0.08));
-  const warm = new THREE.MeshBasicMaterial({ color: '#ffd981' });
+  const warm = new THREE.MeshBasicMaterial({ color: palette.lanternCore });
   const handle = makeMesh(body, stem, dark, 0.45, 1.43, -0.04);
   handle.scale.set(0.14, 0.44, 0.14);
   makeMesh(body, new THREE.CylinderGeometry(0.105, 0.13, 0.23, 6), warm, 0.45, 1.14, -0.04);
@@ -165,11 +259,11 @@ function makePlayer(scene, glow) {
 function makeLantern(scene, glow) {
   const group = new THREE.Group();
   scene.add(group);
-  const wood = material('#99775b');
+  const wood = material(palette.wood);
   makeMesh(group, new THREE.CylinderGeometry(0.8, 1.14, 0.39, 8), material('#777476'), 0, 0.19, 0);
   makeMesh(group, stem, wood, 0, 1.08, 0).scale.set(1.4, 1.83, 1.4);
   makeMesh(group, new THREE.CylinderGeometry(0.64, 0.48, 0.15, 6), wood, 0, 1.98, 0);
-  const paper = material('#8f7394');
+  const paper = material(palette.lanternOff);
   makeMesh(group, new THREE.CylinderGeometry(0.53, 0.53, 0.82, 6), paper, 0, 2.42, 0);
   makeMesh(group, new THREE.ConeGeometry(0.75, 0.56, 6), wood, 0, 3.07, 0);
   for (let index = 0; index < 6; index += 1) {
@@ -177,47 +271,69 @@ function makeLantern(scene, glow) {
     makeMesh(group, new THREE.BoxGeometry(0.055, 0.83, 0.055), wood,
       Math.sin(angle) * 0.53, 2.42, Math.cos(angle) * 0.53);
   }
-  const halo = glowSprite(glow, palette.gold, 5.1, 0.9);
+  const halo = glowSprite(glow, palette.lanternCore, 5.1, 1);
   halo.position.y = 2.42;
   group.add(halo);
-  const flame = new THREE.PointLight('#ffc47b', 52, 14, 2);
-  flame.position.y = 2.4;
-  group.add(flame);
   const circle = new THREE.Mesh(new THREE.CircleGeometry(tuning.safe_radius, 48),
-    new THREE.MeshBasicMaterial({ color: '#f0a74a', transparent: true, opacity: 0.12, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: palette.lanternOn, transparent: true, opacity: 0.18, depthWrite: false }));
   circle.rotation.x = -Math.PI / 2;
   circle.position.y = 0.023;
   group.add(circle);
-  return { group, paper, halo, flame, circle };
+  return { group, paper, halo, circle };
 }
 
 export function createView(container, game) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.19;
-  renderer.domElement.setAttribute('aria-label', 'Cảnh 3D Đảo Bến');
   container.append(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color('#242b4a');
-  scene.fog = new THREE.FogExp2(palette.fog, 0.018);
-  const ambient = new THREE.HemisphereLight('#adbfff', '#675746', 1.6);
+  scene.background = new THREE.Color(palette.sky);
+  scene.fog = new THREE.FogExp2(palette.fog, 0.012);
+  const ambient = new THREE.HemisphereLight('#d9e0ff', '#958d80', 0.15);
   scene.add(ambient);
   const camera = new THREE.PerspectiveCamera(51, 1, 0.2, 160);
   makeSky(scene);
-  makeIsland(scene);
 
   const glow = makeGlow();
   const player = makePlayer(scene, glow);
-  const lanterns = game.lanterns.map(() => makeLantern(scene, glow));
-  const motes = new Map();
+  const terrain = new THREE.Group();
+  scene.add(terrain);
+  let night = 0;
+  let lanterns = [];
   const shades = new Map();
-  const moteCore = new THREE.MeshBasicMaterial({ color: '#fff2ad', toneMapped: false });
-  const shadeCore = material('#25213c');
-  const shadeStunned = material('#7a6997');
+  const drifters = new Map();
+  const charms = new Map();
+  const moteGeometry = new THREE.BufferGeometry();
+  const motePositions = new THREE.BufferAttribute(new Float32Array(72 * 3), 3);
+  motePositions.setUsage(THREE.DynamicDrawUsage);
+  moteGeometry.setAttribute('position', motePositions);
+  for (const [color, size, opacity] of [[palette.moteGlow, 1.45, 0.86], [palette.moteCore, 0.36, 1]]) {
+    const points = new THREE.Points(moteGeometry, new THREE.PointsMaterial({
+      color, size, map: glow, opacity, transparent: true, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false,
+    }));
+    points.frustumCulled = false;
+    scene.add(points);
+  }
+  const shadeCore = material(palette.shade);
+  const shadeStunned = material(palette.stunned);
   const shadeEye = new THREE.SphereGeometry(0.062, 8, 6);
-  const shadeEyes = new THREE.MeshBasicMaterial({ color: '#c5a7ff' });
+  const shadeEyes = new THREE.MeshBasicMaterial({ color: palette.purple, toneMapped: false });
+  const drifterBody = new THREE.PlaneGeometry(1.32, 0.74, 6, 2);
+  const drifterMaterial = new THREE.MeshBasicMaterial({ color: palette.drifter, side: THREE.DoubleSide,
+    transparent: true, opacity: 0.9 });
+  const charmShape = new THREE.PlaneGeometry(0.69, 0.94);
+  const charmMaterial = new THREE.MeshBasicMaterial({ color: palette.red, side: THREE.DoubleSide, toneMapped: false });
+  const trimMaterial = new THREE.MeshBasicMaterial({ color: palette.gold, side: THREE.DoubleSide, toneMapped: false });
+  const windGeometry = new THREE.BufferGeometry();
+  const windPositions = new THREE.BufferAttribute(new Float32Array(24 * 3), 3);
+  windGeometry.setAttribute('position', windPositions);
+  const leaves = new THREE.Points(windGeometry, new THREE.PointsMaterial({ color: '#d4c493', size: 0.14 }));
+  leaves.frustumCulled = false;
+  scene.add(leaves);
   const wave = new THREE.Mesh(new THREE.RingGeometry(0.89, 1, 48), new THREE.MeshBasicMaterial({
     color: '#ffe1a0', side: THREE.DoubleSide, transparent: true, depthWrite: false,
   }));
@@ -225,6 +341,8 @@ export function createView(container, game) {
   wave.visible = false;
   scene.add(wave);
   let waveAge = Infinity;
+  const hintPoint = new THREE.Vector3();
+  const localPoint = new THREE.Vector3();
 
   function fit() {
     const { clientWidth, clientHeight } = container;
@@ -236,42 +354,63 @@ export function createView(container, game) {
   window.addEventListener('resize', fit);
   fit();
 
+  function load(gameState) {
+    if (gameState.night === night) return;
+    const resources = new Set();
+    terrain.traverse((object) => {
+      if (object.geometry && object.geometry !== sphere && object.geometry !== stem) resources.add(object.geometry);
+      for (const surface of Array.isArray(object.material) ? object.material : [object.material]) {
+        if (surface) resources.add(surface);
+      }
+      if (object.isInstancedMesh) object.dispose();
+    });
+    for (const resource of resources) resource.dispose();
+    terrain.clear();
+    decorateWorld(terrain, gameState);
+    lanterns = gameState.lanterns.map(() => makeLantern(terrain, glow));
+    night = gameState.night;
+    renderer.domElement.setAttribute('aria-label', `Cảnh 3D ${gameState.map.name}`);
+  }
+  load(game);
+
   function draw(gameState, yaw, seconds, delta) {
+    load(gameState);
     const { pos, yaw: facing, invulnerableUntil } = gameState.player;
     const [x, y, z] = pos;
-    const blink = gameState.tick < invulnerableUntil && Math.floor(gameState.tick / 5) % 2 === 0;
+    const terraceWall = terrain.userData.terraceWall;
+    if (terraceWall) {
+      const belowTerrace = y < 5.4 && x * x + z * z < 64;
+      terraceWall.transparent = belowTerrace;
+      terraceWall.opacity = belowTerrace ? 0.14 : 1;
+      terraceWall.depthWrite = !belowTerrace;
+    }
+    const blink = gameState.simTick < invulnerableUntil && Math.floor(gameState.simTick / 5) % 2 === 0;
     player.body.position.set(x, y, z);
     player.body.rotation.y = facing;
-    player.body.visible = !blink;
-    const walking = gameState.previousInput.move.some((value) => value !== 0);
+    player.body.visible = !blink && gameState.player.respawnAt === null;
+    const walking = gameState.player.grounded && Math.hypot(gameState.player.vel[0], gameState.player.vel[2]) > 0.01;
     player.shoes.forEach((shoe, index) => { shoe.rotation.x = walking ? Math.sin(seconds * 13 + index * Math.PI) * 0.55 : 0; });
     camera.position.set(x - Math.sin(yaw) * 8.8, Math.max(-3.5, y) + 4.7, z - Math.cos(yaw) * 8.8);
     camera.lookAt(x + Math.sin(yaw) * 2.1, Math.max(-4, y) + 1.03, z + Math.cos(yaw) * 2.1);
 
-    ambient.intensity = 1.58 + gameState.lanterns.filter(({ lit }) => lit).length * 0.23;
+    ambient.intensity = 0.15 + 0.55 * gameState.lanterns.filter(({ lit }) => lit).length / gameState.lanterns.length;
     gameState.lanterns.forEach(({ pos: location, lit }, index) => {
       const model = lanterns[index];
       model.group.position.fromArray(location);
-      model.paper.color.set(lit ? '#ffc572' : '#856c90');
-      model.paper.emissive.set(lit ? '#ff9a39' : '#49405a');
-      model.paper.emissiveIntensity = lit ? 0.85 : 0.25;
+      model.paper.color.set(lit ? palette.lanternOn : palette.lanternOff);
+      model.paper.emissive.set(lit ? palette.lanternOn : palette.lanternOff);
+      model.paper.emissiveIntensity = lit ? 0.72 : 0.12;
       model.halo.visible = lit;
-      model.flame.visible = lit;
       model.circle.visible = lit;
     });
 
-    syncModels(motes, gameState.motes, () => {
-      const group = new THREE.Group();
-      const core = new THREE.Mesh(sphere, moteCore);
-      core.scale.setScalar(0.15);
-      group.add(core, glowSprite(glow, palette.gold, 1.65, 1));
-      scene.add(group);
-      return group;
-    }, (model, mote, index) => {
-      model.position.fromArray(mote.pos);
-      model.position.y += 0.76 + Math.sin(seconds * 3 + index * 1.57) * 0.21;
-      model.scale.setScalar(0.86 + Math.sin(seconds * 5 + index * 2.4) * 0.12);
-    });
+    const visibleMotes = Math.min(gameState.motes.length, motePositions.count);
+    for (let index = 0; index < visibleMotes; index += 1) {
+      const [mx, my, mz] = gameState.motes[index].pos;
+      motePositions.setXYZ(index, mx, my + 0.76 + Math.sin(seconds * 3 + index * 1.57) * 0.21, mz);
+    }
+    moteGeometry.setDrawRange(0, visibleMotes);
+    motePositions.needsUpdate = true;
 
     syncModels(shades, gameState.shades, () => {
       const group = new THREE.Group();
@@ -289,7 +428,50 @@ export function createView(container, game) {
       model.position.y += Math.sin(seconds * 3 + index) * 0.13;
       model.rotation.y = Math.atan2(x - shade.pos[0], z - shade.pos[2]);
       model.children[1].material = shade.state === 'stunned' ? shadeStunned : shadeCore;
+      model.scale.setScalar(shade.state === 'spawning' ? 0.7 + 0.15 * Math.sin(seconds * 20) : 1);
     });
+
+    syncModels(drifters, gameState.drifters, () => {
+      const ribbon = new THREE.Mesh(drifterBody.clone(), drifterMaterial);
+      ribbon.userData.ownsGeometry = true;
+      scene.add(ribbon);
+      return ribbon;
+    }, (ribbon, drifter, index) => {
+      ribbon.position.fromArray(drifter.pos);
+      ribbon.position.y += 0.42 + Math.sin(seconds * 4 + index) * 0.28;
+      ribbon.rotation.set(Math.sin(seconds * 6 + index) * 0.47, yaw + seconds * 0.85, Math.sin(seconds * 3) * 0.22);
+      const points = ribbon.geometry.attributes.position;
+      for (let i = 0; i < points.count; i += 1) points.setZ(i, Math.sin(points.getX(i) * 5 - seconds * 10) * 0.16);
+      points.needsUpdate = true;
+    });
+
+    syncModels(charms, gameState.charms, () => {
+      const card = new THREE.Group();
+      makeMesh(card, charmShape, trimMaterial, 0, 0, 0);
+      const red = makeMesh(card, charmShape, charmMaterial, 0, 0, 0.02);
+      red.scale.set(0.77, 0.84, 1);
+      makeMesh(card, charmShape, charmMaterial, 0, 0, -0.02).scale.copy(red.scale);
+      scene.add(card);
+      return card;
+    }, (card, charm) => {
+      card.position.fromArray(charm.pos);
+      card.position.y += 0.85 + 0.13 * Math.sin(seconds * 4);
+      card.rotation.y = seconds * 1.7;
+      card.visible = charm.available;
+    });
+
+    leaves.visible = gameState.wind.active || gameState.wind.warning;
+    if (leaves.visible) {
+      const angle = gameState.wind.dirDeg * Math.PI / 180;
+      for (let index = 0; index < windPositions.count; index += 1) {
+        const d = (seconds * 7 + index * 1.71) % 24 - 12;
+        const cross = Math.sin(index * 12.13) * 13;
+        windPositions.setXYZ(index, x + d * Math.cos(angle) - cross * Math.sin(angle),
+          Math.max(0, y) + 1 + (index % 6) * 0.45 + Math.sin(seconds * 5 + index) * 0.21,
+          z + d * Math.sin(angle) + cross * Math.cos(angle));
+      }
+      windPositions.needsUpdate = true;
+    }
 
     waveAge += delta;
     wave.visible = waveAge < 0.48;
@@ -311,6 +493,7 @@ export function createView(container, game) {
       if (present.has(id)) continue;
       model.traverse((child) => {
         if (child.isSprite) child.material.dispose();
+        if (child.userData.ownsGeometry) child.geometry.dispose();
       });
       scene.remove(model);
       models.delete(id);
@@ -319,6 +502,19 @@ export function createView(container, game) {
 
   return {
     draw,
+    hint(lantern) {
+      if (!lantern) return null;
+      hintPoint.fromArray(lantern.pos);
+      hintPoint.y += 2.4;
+      localPoint.copy(hintPoint).applyMatrix4(camera.matrixWorldInverse);
+      hintPoint.project(camera);
+      if (localPoint.z < 0 && Math.abs(hintPoint.x) < 0.92 && Math.abs(hintPoint.y) < 0.86) return null;
+      const dx = localPoint.z < 0 ? hintPoint.x : localPoint.x;
+      const dy = localPoint.z < 0 ? hintPoint.y : -Math.abs(localPoint.y) - 2;
+      const scale = 1 / Math.max(0.01, Math.abs(dx), Math.abs(dy));
+      return { x: 50 + dx * scale * 42, y: 49 - dy * scale * 33,
+        angle: Math.atan2(dx, dy) * 180 / Math.PI };
+    },
     pulse(pos) {
       waveAge = 0;
       wave.position.set(pos[0], pos[1] + 0.22, pos[2]);

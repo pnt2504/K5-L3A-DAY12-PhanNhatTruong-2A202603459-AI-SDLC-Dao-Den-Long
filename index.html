@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#10172a">
+    <meta name="theme-color" content="#0E1430">
     <title>Đảo Đèn Lồng</title>
     <link rel="stylesheet" href="/src/style.css">
   </head>
@@ -16,31 +16,49 @@
           <span id="flames" class="flames"></span>
         </div>
         <div class="hud-card center">
-          <span class="hud-label">Đêm 1 · Đảo Bến</span>
-          <time id="time">04:00</time>
+          <span class="hud-label" id="night-name">Đêm 1 · Đảo Bến</span>
+          <time id="time">05:00</time>
         </div>
         <div class="hud-card right">
           <span class="hud-label">Đèn đã thắp</span>
           <span><strong id="lanterns">0 / 5</strong><span class="score" id="score">0 điểm</span></span>
         </div>
       </header>
+      <button type="button" class="small secondary" id="pause-button" aria-label="Tạm dừng" hidden>Ⅱ</button>
       <div id="feedback" role="status" hidden></div>
+      <div id="direction" aria-label="Hướng tới đèn chưa sáng" hidden><span>▲</span></div>
       <div id="reticle" aria-hidden="true" hidden></div>
       <footer id="controls" hidden>
         <div id="action" role="status" hidden></div>
         <div class="inventory">
           <span class="hud-label">Đom đóm <strong id="carry"></strong></span>
           <div id="slots" aria-hidden="true"></div>
-          <span id="pulse-status"></span>
         </div>
-        <p class="keys"><kbd>WASD</kbd> Di chuyển <kbd>Space</kbd> Nhảy <kbd>Q</kbd> Tỏa Sáng <span>Kéo chuột để xoay camera</span></p>
+        <p class="keys"><kbd>WASD</kbd> Di chuyển <kbd>Space</kbd> Nhảy <kbd>Shift</kbd> Lướt <kbd>Q</kbd> Tỏa Sáng <kbd>P</kbd> Dừng <span>Kéo chuột để xoay camera</span></p>
       </footer>
+      <aside id="abilities" aria-label="Kỹ năng" hidden>
+        <div class="ability"><kbd>Shift</kbd><span>Lướt <strong id="dash-status"></strong></span></div>
+        <div class="ability"><kbd>Q</kbd><span>Tỏa Sáng <strong id="pulse-status"></strong></span></div>
+        <p id="charm-status" hidden></p>
+      </aside>
+      <output id="fps" hidden></output>
       <section id="overlay" aria-labelledby="title">
         <div class="panel">
-          <p class="island-name" id="chapter">Đêm 1 · Đảo Bến</p>
+          <p class="island-name" id="chapter">Ba hòn đảo</p>
           <h1 id="title">Đảo<br>Đèn Lồng</h1>
-          <p id="description">Cùng Mây gom đom đóm và thắp lại năm chiếc đèn trước khi bình minh lên.</p>
-          <button type="button" id="start">Bắt đầu</button>
+          <p id="description">Cùng Mây gom đom đóm và thắp lại những ngọn đèn qua ba đêm.</p>
+          <div id="settings" hidden>
+            <label for="volume">Âm lượng <output id="volume-value"></output></label>
+            <input type="range" id="volume" min="0" max="100">
+            <label for="sensitivity">Độ nhạy chuột <output id="sensitivity-value"></output></label>
+            <input type="range" id="sensitivity" min="25" max="200" step="5">
+          </div>
+          <div id="menu-buttons">
+            <button type="button" id="start">Bắt đầu</button>
+            <button type="button" id="secondary" class="secondary">Cài đặt</button>
+            <button type="button" id="tertiary" class="secondary" hidden></button>
+            <button type="button" id="quaternary" class="secondary" hidden></button>
+          </div>
         </div>
       </section>
     </main>
