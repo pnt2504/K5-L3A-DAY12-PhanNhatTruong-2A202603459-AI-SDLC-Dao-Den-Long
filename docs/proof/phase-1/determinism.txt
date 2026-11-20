@@ -1,0 +1,4 @@
+node src/headless.js --seed 12 --night 1 --ticks 1400 --snapshot-every 10 --out <file>
+Run 1 SHA-256: 5e58e418445dda7cabfa4aadb788c6e330ef29902c68d7b362d90bbefd38486d
+Run 2 SHA-256: 5e58e418445dda7cabfa4aadb788c6e330ef29902c68d7b362d90bbefd38486d
+So sánh từng byte: khớp (257082 byte)

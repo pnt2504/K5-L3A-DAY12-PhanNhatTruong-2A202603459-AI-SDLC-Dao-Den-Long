@@ -1,0 +1,6 @@
+{
+  "player": { "carried": 6, "flames": 1 },
+  "random_motes": false,
+  "random_shades": false,
+  "shades": [{ "id": "ink", "pos": [1, 0.8, 0] }]
+}

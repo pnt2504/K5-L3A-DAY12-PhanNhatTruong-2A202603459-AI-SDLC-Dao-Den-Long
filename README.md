@@ -1,4 +1,52 @@
-# Day 12 — AI SDLC: Đảo Đèn Lồng
+# Đảo Đèn Lồng
+
+Trong **Đêm 1 · Đảo Bến**, bạn điều khiển Mây đi gom đom đóm, mang chúng về thắp năm Đèn Lồng Lớn và né Bóng Mực. Bản Phase 1 dùng Test Contract v1.0.
+
+## Cài và chơi
+
+Cần Node.js 22.12 trở lên và trình duyệt có WebGL 2. Trên macOS, Linux hoặc Windows, chạy từ thư mục repo.
+
+```sh
+npm ci
+npm run build
+npm run preview -- --open
+```
+
+Mở địa chỉ Vite in ra nếu trình duyệt chưa bật. Nhấn **Bắt đầu**. Có thể thêm `?seed=12` vào URL để tái hiện vị trí đom đóm và lịch sinh Bóng Mực trong bài kiểm chứng. **Chơi lại** dùng cùng seed.
+
+| Phím | Hành động |
+|---|---|
+| **WASD** | Di chuyển theo camera |
+| **Kéo chuột** hoặc **← / →** | Xoay camera |
+| **Space** | Nhảy |
+| **E** | Nạp vào đèn chưa sáng trong tầm 2 m. Một đèn cần 5 đom đóm và ghi nhớ các lần nạp |
+| **Q** | Tỏa Sáng. Tốn 3 đom đóm, đẩy và làm choáng Bóng Mực trong tầm 5 m, hồi chiêu 2 giây |
+
+Có 3 Ngọn Lửa và 4 phút. Thắp đủ 5 đèn để thắng. Hết lửa hoặc hết giờ thì thua. Đèn đã thắp tạo vùng an toàn bán kính 5 m. Bị Bóng Mực chạm làm rơi một nửa túi. Rơi khỏi đảo làm mất toàn bộ túi, mất một lửa và đưa bạn về điểm xuất phát.
+
+Nhặt mỗi đom đóm được **10 điểm**, thắp mỗi đèn được **100 điểm** và làm choáng mỗi Bóng Mực được **5 điểm**. Khi thắng, cộng **2 điểm** mỗi giây nguyên còn lại và **50 điểm** mỗi Ngọn Lửa còn lại.
+
+## Kiểm chứng Phase 1
+
+```sh
+npm test
+node src/headless.js --seed 12 --night 1 --ticks 7200 --inputs test/fixtures/full-night.inputs.json --out out.jsonl
+node scripts/verify-phase1.js
+```
+
+Ví dụ headless đi hết Đêm 1 từ bản đồ mặc định, không cần cửa sổ hay GPU. `game.contract.json` khai báo các lệnh và tuning.
+
+- [Giả định, tiêu chí nghiệm thu, nhật ký AI và retro](docs/notes/phase-1.md)
+- [Kết quả và cách tái tạo bằng chứng](docs/proof/phase-1/README.md)
+- [Hướng dẫn cho agent](AGENTS.md) · [Nguồn và công cụ](CREDITS.md)
+
+## Sáng tạo của tôi
+
+Đường đá thành vòng nối các đèn với khoảng sân ở giữa, để người chơi có mốc định hướng khi xoay camera. Chi tiết này chỉ được dựng trong cảnh 3D. Bài kiểm chứng headless dùng cùng logic game và kiểm tra đầu ra theo seed.
+
+---
+
+## Đề bài Day 12 — AI SDLC
 
 > **Cá nhân** (1 người / 1 MSSV) · Áp dụng SDLC cùng AI để xây một **game 3D** qua **4 phase**, từ yêu cầu ban đầu tới bản phát hành.
 > **Lab board + trợ giảng:** **[Đảo Đèn Lồng Lab](https://claude.ai/artifact/Q1RYyv1dxjUczzCbd2ZnoW)**

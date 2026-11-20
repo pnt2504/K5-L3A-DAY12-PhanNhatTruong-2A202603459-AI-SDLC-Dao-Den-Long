@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#10172a">
+    <title>Đảo Đèn Lồng</title>
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body>
+    <main id="game" aria-label="Đảo Đèn Lồng">
+      <div id="view"></div>
+      <header id="hud" hidden>
+        <div class="hud-card">
+          <span class="hud-label">Ngọn lửa</span>
+          <span id="flames" class="flames"></span>
+        </div>
+        <div class="hud-card center">
+          <span class="hud-label">Đêm 1 · Đảo Bến</span>
+          <time id="time">04:00</time>
+        </div>
+        <div class="hud-card right">
+          <span class="hud-label">Đèn đã thắp</span>
+          <span><strong id="lanterns">0 / 5</strong><span class="score" id="score">0 điểm</span></span>
+        </div>
+      </header>
+      <div id="feedback" role="status" hidden></div>
+      <div id="reticle" aria-hidden="true" hidden></div>
+      <footer id="controls" hidden>
+        <div id="action" role="status" hidden></div>
+        <div class="inventory">
+          <span class="hud-label">Đom đóm <strong id="carry"></strong></span>
+          <div id="slots" aria-hidden="true"></div>
+          <span id="pulse-status"></span>
+        </div>
+        <p class="keys"><kbd>WASD</kbd> Di chuyển <kbd>Space</kbd> Nhảy <kbd>Q</kbd> Tỏa Sáng <span>Kéo chuột để xoay camera</span></p>
+      </footer>
+      <section id="overlay" aria-labelledby="title">
+        <div class="panel">
+          <p class="island-name" id="chapter">Đêm 1 · Đảo Bến</p>
+          <h1 id="title">Đảo<br>Đèn Lồng</h1>
+          <p id="description">Cùng Mây gom đom đóm và thắp lại năm chiếc đèn trước khi bình minh lên.</p>
+          <button type="button" id="start">Bắt đầu</button>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/browser.js"></script>
+  </body>
+</html>
