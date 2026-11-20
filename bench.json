@@ -1,0 +1,12 @@
+{
+  "contract_version": "1.3",
+  "avg_fps": 439.4714208564773,
+  "p1_low_fps": 120.19668548533872,
+  "frame_ms_p95": 3.599999999998545,
+  "frames": 13183,
+  "load_ms": 1416,
+  "peak_mem_mb": null,
+  "vsync_off": true,
+  "renderer": "Three.js r187 · WebGL 2 · ANGLE (Intel, Intel(R) Iris(R) Xe Graphics (0x000046A6) Direct3D11 vs_5_0 ps_5_0, D3D11) · Chromium 157.0.8103.79",
+  "os": "Windows_NT 10.0.26200 (x64)"
+}

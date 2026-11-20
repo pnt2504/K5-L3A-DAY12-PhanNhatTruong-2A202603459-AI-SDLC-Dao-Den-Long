@@ -1,0 +1,7 @@
+Gói: dao-den-long-v1.0.0-web.tar.gz
+Giải nén sạch, không có node_modules.
+node scripts/run.js --no-open --port 0 → trang HTTP 200, asset JS HTTP 200
+node scripts/run.js --export-leaderboard <file> → { "entries": [] } (hồ sơ cô lập mới).
+
+Linux: bản giải nén khởi động bằng Node và trả HTML/JS qua HTTP.
+Linux: xuất JSON thành công từ cùng gói.

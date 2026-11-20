@@ -1,0 +1,27 @@
+Linux
+v24.16.0
+4d77231
+# tests 40
+# pass 40
+# fail 0
+Headless: khớp từng byte với v1.2
+node --jitless --expose-gc scripts/soak.js --seed 7 --nights 10 --out soak.json
+{
+  "nights": 10,
+  "crashes": 0,
+  "results": [
+    "lost",
+    "lost",
+    "lost",
+    "lost",
+    "lost",
+    "lost",
+    "lost",
+    "lost",
+    "lost",
+    "lost"
+  ],
+  "mem_start_mb": 47.3125,
+  "mem_end_mb": 50.6875,
+  "duration_s": 1.555068281
+}

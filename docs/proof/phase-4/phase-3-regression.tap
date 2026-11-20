@@ -1,0 +1,214 @@
+TAP version 13
+# Subtest: nhạc và mỗi hiệu ứng Phase 2 tạo nốt với tần số và thời điểm riêng
+ok 1 - nhạc và mỗi hiệu ứng Phase 2 tạo nốt với tần số và thời điểm riêng
+  ---
+  duration_ms: 6.4687
+  type: 'test'
+  ...
+# Subtest: input giữ trạng thái, xoay theo yaw và chuẩn hóa di chuyển chéo
+ok 2 - input giữ trạng thái, xoay theo yaw và chuẩn hóa di chuyển chéo
+  ---
+  duration_ms: 181.5679
+  type: 'test'
+  ...
+# Subtest: giữ jump không tự bật lại khi đã tiếp đất
+ok 3 - giữ jump không tự bật lại khi đã tiếp đất
+  ---
+  duration_ms: 188.8659
+  type: 'test'
+  ...
+# Subtest: nhặt đom đóm, thắp đèn cuối và tiếp tục chơi đến bình minh
+ok 4 - nhặt đom đóm, thắp đèn cuối và tiếp tục chơi đến bình minh
+  ---
+  duration_ms: 227.2417
+  type: 'test'
+  ...
+# Subtest: nạp một phần; giữ E không nạp lại; lần nhấn kế tiếp thắp đèn
+ok 5 - nạp một phần; giữ E không nạp lại; lần nhấn kế tiếp thắp đèn
+  ---
+  duration_ms: 192.7147
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng đẩy, choáng, tiêu hao; khi hết choáng Bóng Mực quay lại gây thua
+ok 6 - Tỏa Sáng đẩy, choáng, tiêu hao; khi hết choáng Bóng Mực quay lại gây thua
+  ---
+  duration_ms: 211.7867
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng thiếu tài nguyên và đang hồi chiêu đều không kích hoạt
+ok 7 - Tỏa Sáng thiếu tài nguyên và đang hồi chiêu đều không kích hoạt
+  ---
+  duration_ms: 406.9406
+  type: 'test'
+  ...
+# Subtest: vùng sáng chặn Bóng Mực, bất tử chặn sát thương lặp lại
+ok 8 - vùng sáng chặn Bóng Mực, bất tử chặn sát thương lặp lại
+  ---
+  duration_ms: 392.4985
+  type: 'test'
+  ...
+# Subtest: rơi khỏi đảo mất một lửa và trở về điểm xuất phát; hết giờ thì thua
+ok 9 - rơi khỏi đảo mất một lửa và trở về điểm xuất phát; hết giờ thì thua
+  ---
+  duration_ms: 380.5854
+  type: 'test'
+  ...
+# Subtest: snapshot cách 10 tick và đầu ra khớp từng byte khi dùng cùng seed
+ok 10 - snapshot cách 10 tick và đầu ra khớp từng byte khi dùng cùng seed
+  ---
+  duration_ms: 461.4563
+  type: 'test'
+  ...
+# Subtest: override một phần scenario, ID mặc định không đụng ID đặt sẵn và --ticks 0
+ok 11 - override một phần scenario, ID mặc định không đụng ID đặt sẵn và --ticks 0
+  ---
+  duration_ms: 246.0121
+  type: 'test'
+  ...
+# Subtest: inputs hoặc scenario sai cấu trúc → 2 và stderr; tham số sai → 1
+ok 12 - inputs hoặc scenario sai cấu trúc → 2 và stderr; tham số sai → 1
+  ---
+  duration_ms: 2690.4901
+  type: 'test'
+  ...
+# Subtest: tuning v1.2: bản đồ, số đèn, đồng hồ và vị trí sinh theo từng Đêm
+ok 13 - tuning v1.2: bản đồ, số đèn, đồng hồ và vị trí sinh theo từng Đêm
+  ---
+  duration_ms: 672.3899
+  type: 'test'
+  ...
+# Subtest: Lướt 12 tick, giữ độ cao, bỏ lần nhấn khi đang Lướt và chờ đúng 90 tick
+ok 14 - Lướt 12 tick, giữ độ cao, bỏ lần nhấn khi đang Lướt và chờ đúng 90 tick
+  ---
+  duration_ms: 527.9484
+  type: 'test'
+  ...
+# Subtest: tạm dừng làm đứng yên gameplay, spawn, hồi chiêu, bất tử và TTL
+ok 15 - tạm dừng làm đứng yên gameplay, spawn, hồi chiêu, bất tử và TTL
+  ---
+  duration_ms: 270.4937
+  type: 'test'
+  ...
+# Subtest: Bùa Gió tăng tốc, Lướt liên tiếp và hồi sinh đồng bộ theo tick
+ok 16 - Bùa Gió tăng tốc, Lướt liên tiếp và hồi sinh đồng bộ theo tick
+  ---
+  duration_ms: 447.4313
+  type: 'test'
+  ...
+# Subtest: Gió Lạc cướp trong vùng sáng và lúc bất tử, Tỏa Sáng lấy lại được đom đóm
+ok 17 - Gió Lạc cướp trong vùng sáng và lúc bất tử, Tỏa Sáng lấy lại được đom đóm
+  ---
+  duration_ms: 468.0772
+  type: 'test'
+  ...
+# Subtest: Gió Lạc sinh theo lịch, tối đa hai ở Đêm 2–3 và không tự sinh ở Đêm 1
+ok 18 - Gió Lạc sinh theo lịch, tối đa hai ở Đêm 2–3 và không tự sinh ở Đêm 1
+  ---
+  duration_ms: 672.7852
+  type: 'test'
+  ...
+# Subtest: Đảo Cau đi qua cầu và bật đúng hướng, bỏ qua phím di chuyển khi đang bay
+ok 19 - Đảo Cau đi qua cầu và bật đúng hướng, bỏ qua phím di chuyển khi đang bay
+  ---
+  duration_ms: 456.8983
+  type: 'test'
+  ...
+# Subtest: Đảo Chuông có vách, dốc, bục lên tầng 2 và tháp đứng chắn đường
+ok 20 - Đảo Chuông có vách, dốc, bục lên tầng 2 và tháp đứng chắn đường
+  ---
+  duration_ms: 625.4005
+  type: 'test'
+  ...
+# Subtest: Gió mạnh Đêm 3 bật ở tick 1800, đủ 300 tick, đẩy đúng 2 m/s và tắt được
+ok 21 - Gió mạnh Đêm 3 bật ở tick 1800, đủ 300 tick, đẩy đúng 2 m/s và tắt được
+  ---
+  duration_ms: 347.1285
+  type: 'test'
+  ...
+# Subtest: nhặt và chạm kiểm tra độ cao; pulse kiểm tra bán kính 3D từ chân cộng 0.8 m
+ok 22 - nhặt và chạm kiểm tra độ cao; pulse kiểm tra bán kính 3D từ chân cộng 0.8 m
+  ---
+  duration_ms: 189.5659
+  type: 'test'
+  ...
+# Subtest: khóa vùng sáng đẩy Bóng Mực đang đứng trong vùng ra trong tối đa 30 tick
+ok 23 - khóa vùng sáng đẩy Bóng Mực đang đứng trong vùng ra trong tối đa 30 tick
+  ---
+  duration_ms: 227.8713
+  type: 'test'
+  ...
+# Subtest: mô phỏng chuỗi ba Đêm: điểm thua không cộng, thắng đúng hạn mở Đêm kế tiếp
+ok 24 - mô phỏng chuỗi ba Đêm: điểm thua không cộng, thắng đúng hạn mở Đêm kế tiếp
+  ---
+  duration_ms: 1140.9672
+  type: 'test'
+  ...
+# Subtest: bật bục Đảo Chuông, đáp tầng 2 và nạp đèn ở tick bình minh
+ok 25 - bật bục Đảo Chuông, đáp tầng 2 và nạp đèn ở tick bình minh
+  ---
+  duration_ms: 269.0588
+  type: 'test'
+  ...
+# Subtest: chọn đèn nhận được gần nhất; bỏ đèn đầy, cùng khoảng cách ưu tiên ID nhỏ
+ok 26 - chọn đèn nhận được gần nhất; bỏ đèn đầy, cùng khoảng cách ưu tiên ID nhỏ
+  ---
+  duration_ms: 245.8439
+  type: 'test'
+  ...
+# Subtest: đèn tắt đúng tick sau 100 giây, reset tiến độ và nhớ số lần thắp lại
+ok 27 - đèn tắt đúng tick sau 100 giây, reset tiến độ và nhớ số lần thắp lại
+  ---
+  duration_ms: 607.6767
+  type: 'test'
+  ...
+# Subtest: sức chứa tăng theo số lần thắp và giới hạn ở 20
+ok 28 - sức chứa tăng theo số lần thắp và giới hạn ở 20
+  ---
+  duration_ms: 517.6567
+  type: 'test'
+  ...
+# Subtest: hai Bóng Mực hút cộng dồn, báo theo 60 tick hút và dừng khi đèn tắt
+ok 29 - hai Bóng Mực hút cộng dồn, báo theo 60 tick hút và dừng khi đèn tắt
+  ---
+  duration_ms: 318.8319
+  type: 'test'
+  ...
+# Subtest: wander ưu tiên đèn yếu theo khoảng cách và ID; chase tiếp tục đuổi Mây
+ok 30 - wander ưu tiên đèn yếu theo khoảng cách và ID; chase tiếp tục đuổi Mây
+  ---
+  duration_ms: 301.6263
+  type: 'test'
+  ...
+# Subtest: châm tới đúng 30 phục hồi vùng sáng và đẩy Bóng Mực ra
+ok 31 - châm tới đúng 30 phục hồi vùng sáng và đẩy Bóng Mực ra
+  ---
+  duration_ms: 582.7023
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng cho tổng 15 điểm khi đang hút và 5 điểm cho Bóng Mực khác
+ok 32 - Tỏa Sáng cho tổng 15 điểm khi đang hút và 5 điểm cho Bóng Mực khác
+  ---
+  duration_ms: 258.8473
+  type: 'test'
+  ...
+# Subtest: ngưỡng bình minh 3/5, 4/6, 5/7 và số đèn tính sau khi dầu cạn
+ok 33 - ngưỡng bình minh 3/5, 4/6, 5/7 và số đèn tính sau khi dầu cạn
+  ---
+  duration_ms: 2077.8089
+  type: 'test'
+  ...
+# Subtest: tạm dừng giữ dầu và bộ đếm hút dùng sim_tick
+ok 34 - tạm dừng giữ dầu và bộ đếm hút dùng sim_tick
+  ---
+  duration_ms: 386.2486
+  type: 'test'
+  ...
+1..34
+# tests 34
+# suites 0
+# pass 34
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17678.3629

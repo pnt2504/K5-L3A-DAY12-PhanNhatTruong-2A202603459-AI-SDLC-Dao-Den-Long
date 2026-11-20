@@ -1,0 +1,22 @@
+{
+  "videoCues": {
+    "nightStart": 4.416200400000001,
+    "deposit": 12.326477500000001,
+    "lost": 33.6831059,
+    "leaderboard": 36.36880310000001
+  },
+  "normalText": "18px",
+  "largeText": "22.5px",
+  "conflict": "W đã dùng cho Đi lên. Hãy chọn phím khác.",
+  "remapAfterReload": "paused",
+  "pickedMote": "1 / 10",
+  "shadeCaptionAndArrow": true,
+  "hudMinimumText": 18,
+  "deposited": "5 điểm",
+  "rankAfterServerRestart": true,
+  "viewport": {
+    "width": 1280,
+    "height": 720
+  },
+  "consoleErrors": []
+}
