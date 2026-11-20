@@ -6,6 +6,9 @@ import { arch, platform, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
+import contract from '../game.contract.json' with { type: 'json' };
+
+assert.equal(contract.contract_version, '1.1', 'Chạy script này từ checkout của tag phase-2');
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const proof = join(root, 'docs', 'proof', 'phase-2');

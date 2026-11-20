@@ -1,7 +1,8 @@
-import { DEFAULT_INPUT, STEP, TICKS_PER_SECOND, tuning } from './rules.js';
+import { carryCapacity, DEFAULT_INPUT, STEP, TICKS_PER_SECOND, tuning } from './rules.js';
 import { blockedAcross, directionXZ, distanceXZ, EPSILON, floorAt, makeRandom, nightMap, START } from './world.js';
 import { doPulse, initializeActors, moveActors, pickUp, resolveContact, spawnActors, updateSafeZones,
   updateTimers } from './actors.js';
+import { burnFuel, createLantern, dawnThreshold, interactWithLantern, lanternSnapshots } from './lanterns.js';
 
 export { DEFAULT_INPUT, TICKS_PER_SECOND, tuning } from './rules.js';
 
@@ -29,6 +30,7 @@ export function createGame(seed, scenario = {}, night = 1) {
       pos, vel: [0, 0, 0], verticalSpeed: 0, yaw: 0,
       grounded: floorAt(map, pos[0], pos[2], pos[1]) === pos[1],
       flames: scenario.player?.flames ?? tuning.flames, carried: scenario.player?.carried ?? 0,
+      successfulLights: scenario.player?.successful_lights ?? 0,
       invulnerableUntil: scenario.player?.invuln_ticks ?? 0,
       pulseReadyAt: scenario.player?.pulse_cd_ticks ?? 0,
       dashReadyAt: scenario.player?.dash_cd_ticks ?? 0,
@@ -38,9 +40,7 @@ export function createGame(seed, scenario = {}, night = 1) {
     lanterns: map.lanterns.map((position, index) => {
       const id = `L${index + 1}`;
       const change = scenario.lanterns?.find((lantern) => lantern.id === id);
-      const deposited = change?.deposited ?? (change?.lit ? tuning.lantern_cost : 0);
-      return { id, pos: [...(change?.pos ?? position)], deposited,
-        lit: change?.lit ?? deposited >= tuning.lantern_cost };
+      return createLantern(id, position, change);
     }),
   };
   initializeActors(game, scenario);
@@ -175,47 +175,24 @@ function moveOrRespawn(game, input, pressed, emit) {
   return false;
 }
 
-export function nearbyLantern(game, from = game.player.pos, limit = tuning.interact_radius) {
-  let target;
-  let nearest = Infinity;
-  for (const lantern of game.lanterns) {
-    const distance = distanceXZ(from, lantern.pos);
-    if (!lantern.lit && distance <= limit + EPSILON && distance < nearest - EPSILON) {
-      target = lantern;
-      nearest = distance;
-    }
-  }
-  return target;
-}
-
-function deposit(game, emit) {
-  const target = nearbyLantern(game);
-  if (!target) return;
-  const amount = Math.min(game.player.carried, Math.max(0, tuning.lantern_cost - target.deposited));
-  if (amount === 0) return;
-  game.player.carried -= amount;
-  target.deposited += amount;
-  game.score += amount * tuning.score.per_mote;
-  emit('deposit', { lantern_id: target.id, amount, deposited: target.deposited });
-  if (target.deposited === tuning.lantern_cost) {
-    target.lit = true;
-    game.score += tuning.score.per_lantern;
-    emit('lantern_lit', { lantern_id: target.id });
-  }
-}
-
 function resolveEnd(game, emit) {
   if (game.player.flames <= 0) {
     game.state = 'lost';
     game.reason = 'no_flames';
-  } else if (game.lanterns.every(({ lit }) => lit)) {
-    game.state = 'won';
-    game.reason = 'all_lit';
-    game.score += Math.floor(game.timeLeft + EPSILON) * tuning.score.per_second_left
-      + game.player.flames * tuning.score.per_flame_left;
   } else if (game.timeLeft <= 0) {
-    game.state = 'lost';
-    game.reason = 'dawn';
+    const lit = game.lanterns.filter((lantern) => lantern.lit);
+    if (lit.length < dawnThreshold(game)) {
+      game.state = 'lost';
+      game.reason = 'dawn';
+    } else {
+      game.state = 'won';
+      game.reason = 'dawn_survived';
+      for (const lantern of lit) {
+        game.score += tuning.score.per_lantern_dawn
+          + Math.floor(lantern.fuelUnits / TICKS_PER_SECOND) * tuning.score.per_fuel_dawn;
+      }
+      game.score += game.player.flames * tuning.score.per_flame_left;
+    }
   }
   if (game.reason) emit('game_over', { result: game.state, reason: game.reason });
 }
@@ -239,10 +216,11 @@ export function stepGame(game, input = DEFAULT_INPUT) {
   game.timeLeft = Math.max(0, game.duration - game.simTick / TICKS_PER_SECOND);
   updateWind(game);
   updateTimers(game);
+  burnFuel(game, emit);
   const present = game.player.flames > 0 && moveOrRespawn(game, input, pressed, emit);
   if (present) {
     pickUp(game, emit);
-    if (pressed('interact')) deposit(game, emit);
+    if (pressed('interact')) interactWithLantern(game, emit);
   }
   updateSafeZones(game);
   if (present && pressed('pulse')) doPulse(game, emit);
@@ -268,11 +246,12 @@ export function snapshot(game) {
     time_left_s: game.timeLeft, score: game.score,
     wind: { active: game.wind.active, dir_deg: game.wind.dirDeg },
     player: { pos: player.pos.map(rounded), vel: player.vel.map(rounded), flames: player.flames,
-      carried: player.carried, grounded: player.grounded, invuln: simTick < player.invulnerableUntil,
+      carried: player.carried, capacity: carryCapacity(player), grounded: player.grounded,
+      invuln: simTick < player.invulnerableUntil,
       dash_cd_s: simTick < player.charmUntil ? 0 : remaining(player.dashReadyAt, simTick),
       pulse_cd_s: remaining(player.pulseReadyAt, simTick),
       charm_s: remaining(player.charmUntil, simTick) },
-    lanterns: game.lanterns.map(({ id, pos, lit, deposited }) => ({ id, pos: pos.map(rounded), lit, deposited })),
+    lanterns: lanternSnapshots(game, rounded),
     shades: game.shades.map(({ id, pos, state }) => ({ id, pos: pos.map(rounded), state })),
     motes_active: game.motes.length,
     motes: game.motes.map(({ id, pos, kind, expiresAt }) =>

@@ -1,6 +1,6 @@
 # Đảo Đèn Lồng
 
-Bạn điều khiển Mây gom đom đóm, thắp đèn và né Bóng Mực để đưa ánh sáng trở lại ba hòn đảo. Bản Phase 2 dùng Test Contract v1.1.
+Bạn điều khiển Mây gom đom đóm, châm dầu và giữ đủ đèn sáng tới bình minh trên ba hòn đảo. Bản Phase 3 dùng Test Contract v1.2.
 
 ## Cài và chơi
 
@@ -12,7 +12,7 @@ npm run build
 npm run preview -- --open
 ```
 
-Mở địa chỉ Vite in ra nếu trình duyệt chưa bật. Chọn **Bắt đầu** rồi **Vào đêm**. Có thể thêm `?seed=12` vào URL để tái tạo bố cục đầu Đêm 1 trong bài kiểm chứng. **Chơi lại Đêm** dùng cùng seed. Âm lượng và độ nhạy chuột được lưu qua các lần mở game.
+Mở địa chỉ Vite in ra nếu trình duyệt chưa bật. Chọn **Bắt đầu** rồi **Vào đêm**. Thêm `?seed=12` để tái tạo bố cục đầu Đêm 1. **Chơi lại Đêm** dùng cùng seed. Game lưu âm lượng, độ nhạy chuột và tùy chọn **Bảng màu dễ phân biệt**.
 
 | Phím | Hành động |
 |---|---|
@@ -20,27 +20,27 @@ Mở địa chỉ Vite in ra nếu trình duyệt chưa bật. Chọn **Bắt đ
 | **Kéo chuột** hoặc **← / →** | Xoay camera |
 | **Space** | Nhảy |
 | **Shift** | Lướt trong 0,2 giây. Hồi chiêu 1,5 giây, hoặc lướt liên tiếp khi có Bùa Gió |
-| **E** | Nạp vào đèn chưa sáng trong tầm 2 m. Mỗi đèn cần 10 đom đóm và ghi nhớ tiến độ |
+| **E** | Tương tác trong tầm 2 m. Đèn mới cần 10 đom đóm, đèn đã tắt cần 5 để thắp lại. Đèn đang sáng nhận thêm dầu |
 | **Q** | Tỏa Sáng. Tốn 3 đom đóm, đẩy và làm choáng Bóng Mực trong tầm 5 m. Hồi chiêu 3 giây |
 | **Esc** hoặc **P** | Tạm dừng hoặc tiếp tục |
 
-Đảo Bến, Đảo Cau và Đảo Chuông lần lượt có **5, 6 và 7 đèn** với **5:00, 5:30 và 6:00**. Mỗi đêm bắt đầu với 3 Ngọn Lửa. Đèn đã thắp tạo vùng an toàn bán kính 6 m với Bóng Mực. Gió Lạc xuất hiện ở hai đêm sau và cướp đom đóm khi đuổi kịp. Mây có thể dùng cầu tre hoặc bục nhảy ở Đảo Cau, rồi dùng dốc và bục nhảy để lên tầng cao ở Đảo Chuông.
+Đảo Bến, Đảo Cau và Đảo Chuông yêu cầu giữ ít nhất **3/5**, **4/6** và **5/7** đèn đến hết **4:00**, **4:30** và **5:00**. Mỗi đêm bắt đầu với 3 Ngọn Lửa. Đèn khởi đầu với 100 dầu khi được thắp và hao 1 dầu mỗi giây. Mỗi đom đóm châm thêm 10 dầu. Dưới 30 dầu, đèn nhấp nháy, mất vùng an toàn và có thể bị Bóng Mực hút dầu. Mỗi lần thắp tăng sức chứa thêm hai, từ 10 lên tối đa 20. Gió Lạc vẫn có thể cướp đom đóm ở hai đêm sau.
 
-Mỗi đom đóm **nạp vào đèn** được **10 điểm**, thắp mỗi đèn được **100 điểm** và mỗi Bóng Mực trúng Tỏa Sáng được **5 điểm**. Khi thắng, cộng **2 điểm** mỗi giây nguyên còn lại và **50 điểm** mỗi Ngọn Lửa còn lại. Màn Bình Minh hiển thị tổng điểm các đêm đã thắng.
+Mỗi đom đóm nạp hoặc châm được **5 điểm**. Lần thắp đầu được **100**, thắp lại được **40**. Tỏa Sáng được **5 điểm** mỗi Bóng Mực trúng, hoặc **15** nếu nó đang hút dầu. Khi thắng ở bình minh, mỗi đèn sáng thưởng **50 cộng số dầu nguyên còn lại**, và mỗi Ngọn Lửa còn lại thưởng **50**. Màn Bình Minh hiển thị tổng điểm các đêm đã thắng.
 
-## Kiểm chứng Phase 2
+## Kiểm chứng Phase 3
 
 ```sh
 npm test
-node src/headless.js --seed 12 --night 1 --ticks 18000 --inputs test/fixtures/full-night.inputs.json --out out.jsonl
-node scripts/verify-phase2.js
+node src/headless.js --seed 12 --night 1 --ticks 180 --scenario test/fixtures/phase-3/maintenance.scenario.json --inputs test/fixtures/phase-3/maintenance.inputs.json --out out.jsonl
+node scripts/verify-phase3.js
 ```
 
-CLI nhận `--night 1`, `2` hoặc `3`, cùng các tùy chọn `--scenario`, `--inputs` và `--snapshot-every`. Ví dụ trên đi hết Đêm 1 từ bản đồ mặc định. Tệp `game.contract.json` khai báo lệnh chạy và thông số.
+CLI nhận `--night 1`, `2` hoặc `3`. Ví dụ kiểm tra đèn cạn, thắp lại, châm dầu, Bóng Mực hút và kết quả ở bình minh. Tệp `game.contract.json` khai báo lệnh chạy và thông số.
 
-- [Tiêu chí nghiệm thu, giả định và nhật ký Phase 2](docs/notes/phase-2.md)
-- [Kết quả và cách tái tạo bằng chứng Phase 2](docs/proof/phase-2/README.md)
-- [Bằng chứng Phase 1](docs/proof/phase-1/README.md). Chạy lại bằng script v1.0 tại tag `phase-1`.
+- [ADR, hồi quy và nhật ký Phase 3](docs/notes/phase-3.md) · [Changelog](CHANGELOG.md)
+- [Bằng chứng Phase 3](docs/proof/phase-3/README.md)
+- [Bằng chứng Phase 1](docs/proof/phase-1/README.md) · [Bằng chứng Phase 2](docs/proof/phase-2/README.md). Chạy script tương ứng tại tag `phase-1` hoặc `phase-2`.
 - [Hướng dẫn cho agent](AGENTS.md) · [Nguồn và công cụ](CREDITS.md)
 
 ## Sáng tạo của tôi

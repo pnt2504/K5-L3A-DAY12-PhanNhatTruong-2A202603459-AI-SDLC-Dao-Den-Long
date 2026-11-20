@@ -1,4 +1,6 @@
-import { createGame, DEFAULT_INPUT, nearbyLantern, stepGame, TICKS_PER_SECOND, tuning } from './game.js';
+import { createGame, DEFAULT_INPUT, stepGame, TICKS_PER_SECOND, tuning } from './game.js';
+import { carryCapacity } from './rules.js';
+import { dawnThreshold, fuelValue, isWeakLight, lightCost, nearbyLantern, nearestLantern } from './lanterns.js';
 import { completeNight, createCampaign, nextNight, TOTAL_NIGHTS } from './campaign.js';
 import { createSound } from './audio.js';
 import { createView } from './scene.js';
@@ -9,7 +11,7 @@ const actions = new Map([['Space', 'jump'], ['KeyE', 'interact'], ['KeyQ', 'puls
   ['ShiftLeft', 'dash'], ['ShiftRight', 'dash']]);
 const movement = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
 const narration = [
-  'Mây ơi, hãy lần theo con đường quanh bến. Ngọn đèn đầu tiên sẽ soi lối cho con.',
+  'Mây ơi, hãy lần theo con đường quanh bến. Đèn sẽ cạn dầu, con nhớ quay lại châm thêm trước bình minh.',
   'Qua cầu tre để sang đảo bên kia. Bục nhảy đưa con qua biển mây, còn bùa đỏ sẽ tiếp sức cho đôi chân.',
   'Hãy tìm dốc lên tầng giữa rồi dùng bục nhảy để lên tháp. Khi lá bắt đầu bay, gió mạnh sắp tới.',
 ];
@@ -20,7 +22,7 @@ const seed = querySeed !== null && /^-?\d+$/.test(querySeed) && Number.isSafeInt
   ? Number(querySeed) : crypto.getRandomValues(new Uint32Array(1))[0];
 const measureFPS = query.get('fps') === '1';
 const tickLength = 1 / TICKS_PER_SECOND;
-const slots = Array.from({ length: tuning.carry_capacity }, () =>
+const slots = Array.from({ length: tuning.capacity_max }, () =>
   elements.slots.appendChild(document.createElement('span')));
 const keys = new Set();
 const pending = new Set();
@@ -33,9 +35,10 @@ function bounded(value, minimum, maximum, fallback) {
 function readSettings() {
   try {
     const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY)) ?? {};
-    return { volume: bounded(stored.volume, 0, 100, 55), sensitivity: bounded(stored.sensitivity, 25, 200, 100) };
+    return { volume: bounded(stored.volume, 0, 100, 55), sensitivity: bounded(stored.sensitivity, 25, 200, 100),
+      distinctColors: stored.distinctColors === true };
   } catch {
-    return { volume: 55, sensitivity: 100 };
+    return { volume: 55, sensitivity: 100, distinctColors: false };
   }
 }
 
@@ -48,6 +51,8 @@ let previousTime;
 let accumulator = 0;
 let dragX;
 let feedbackUntil = 0;
+let feedbackMessage = '';
+let feedbackWarning = false;
 let lastFlames = -1;
 let lastSeconds;
 let settingsBack;
@@ -59,6 +64,10 @@ function text(node, value) {
 
 function nightTitle() {
   return `Đêm ${campaign.night} · ${game.map.name}`;
+}
+
+function warningText(message, warning) {
+  return warning && settings.distinctColors ? `⚠ ${message}` : message;
 }
 
 function drawHud() {
@@ -77,15 +86,21 @@ function drawHud() {
 
   const seconds = Math.ceil(game.timeLeft);
   const time = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-  text(elements.time, time);
-  elements.time.classList.toggle('urgent', seconds <= 30);
+  const urgent = seconds <= 30;
+  text(elements.time, warningText(time, urgent));
+  elements.time.classList.toggle('urgent', urgent);
   if (seconds > 0 && seconds <= 10 && seconds !== lastSeconds) sound.cue('countdown');
   lastSeconds = seconds;
   text(elements['night-name'], nightTitle());
   text(elements.lanterns, `${lanterns.filter(({ lit }) => lit).length} / ${lanterns.length}`);
+  text(elements['dawn-target'], `Giữ ${dawnThreshold(game)} đèn tới bình minh`);
   text(elements.score, `${game.score} điểm`);
-  text(elements.carry, `${player.carried} / ${tuning.carry_capacity}`);
-  for (const [index, slot] of slots.entries()) slot.classList.toggle('charged', index < player.carried);
+  const capacity = carryCapacity(player);
+  text(elements.carry, `${player.carried} / ${capacity}`);
+  for (const [index, slot] of slots.entries()) {
+    slot.hidden = index >= capacity;
+    slot.classList.toggle('charged', index < player.carried);
+  }
   const pulseCd = Math.max(0, player.pulseReadyAt - simTick) / TICKS_PER_SECOND;
   const dashCd = Math.max(0, player.dashReadyAt - simTick) / TICKS_PER_SECOND;
   const charm = Math.max(0, player.charmUntil - simTick) / TICKS_PER_SECOND;
@@ -97,8 +112,18 @@ function drawHud() {
 
   const nearby = nearbyLantern(game);
   elements.action.hidden = !nearby;
-  if (nearby) text(elements.action, `E — Nạp ánh sáng (${nearby.deposited}/${tuning.lantern_cost})`);
+  if (nearby) {
+    const warning = isWeakLight(nearby);
+    const action = nearby.lit ? `E — Châm dầu (${fuelValue(nearby).toFixed(1)}/100)`
+      : `E — ${nearby.everLit ? 'Thắp lại' : 'Nạp ánh sáng'} (${nearby.deposited}/${lightCost(nearby)})`;
+    elements.action.classList.toggle('warning', warning);
+    text(elements.action, warningText(action, warning));
+  }
   elements.feedback.hidden = simTick >= feedbackUntil;
+  if (!elements.feedback.hidden) {
+    elements.feedback.classList.toggle('warning', feedbackWarning);
+    text(elements.feedback, warningText(feedbackMessage, feedbackWarning));
+  }
 }
 
 function clearInput() {
@@ -148,6 +173,8 @@ function showControls() {
 function setSettingsValues() {
   elements.volume.value = settings.volume;
   elements.sensitivity.value = settings.sensitivity;
+  elements['distinct-colors'].checked = settings.distinctColors;
+  elements.game.dataset.palette = settings.distinctColors ? 'distinct' : 'standard';
   text(elements['volume-value'], `${settings.volume}%`);
   text(elements['sensitivity-value'], `${settings.sensitivity}%`);
   sound.volume(settings.volume / 100);
@@ -156,6 +183,7 @@ function setSettingsValues() {
 function updateSettings() {
   settings.volume = elements.volume.valueAsNumber;
   settings.sensitivity = elements.sensitivity.valueAsNumber;
+  settings.distinctColors = elements['distinct-colors'].checked;
   setSettingsValues();
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -189,7 +217,7 @@ function run(view) {
     campaign = createCampaign();
     resetNight();
     showPanel('menu', 'Ba hòn đảo', 'Đảo Đèn Lồng',
-      'Cùng Mây gom đom đóm và thắp lại những ngọn đèn qua ba đêm.',
+      'Cùng Mây gom đom đóm, châm dầu và giữ ba hòn đảo sáng đến bình minh.',
       [['Bắt đầu', showIntro], ['Cài đặt', () => showSettings(showMenu)]]);
   }
 
@@ -218,14 +246,15 @@ function run(view) {
         `Điểm Đêm ${campaign.night}: ${game.score}. Tổng điểm: ${score}.`,
         [['Đêm tiếp theo', () => { if (nextNight(campaign)) showIntro(); }], ['Về menu', showMenu]]);
     } else {
-      const reason = game.reason === 'dawn' ? 'Trời đã sáng trước khi Mây thắp hết đèn.' : 'Mây đã hết Ngọn Lửa.';
+      const reason = game.reason === 'dawn' ? 'Đảo còn quá ít đèn sáng lúc bình minh.' : 'Mây đã hết Ngọn Lửa.';
       showPanel('result', nightTitle(), 'Đèn đã tắt', `${reason} Điểm Đêm này: ${game.score}.`,
         [['Chơi lại Đêm', begin], ['Về menu', showMenu]]);
     }
   }
 
-  function notice(message) {
-    text(elements.feedback, message);
+  function notice(message, warning = false) {
+    feedbackMessage = message;
+    feedbackWarning = warning;
     feedbackUntil = game.simTick + 105;
   }
 
@@ -234,8 +263,10 @@ function run(view) {
     for (const { name, data } of stepGame(game, input)) {
       sound.cue(name);
       if (name === 'pulse') view.pulse(game.player.pos);
-      if (name === 'lantern_lit') notice('Một ngọn đèn đã sáng');
-      if (name === 'player_hit') notice(data.by === 'fall' ? 'Mây vừa rơi khỏi đảo' : 'Bóng Mực chạm vào Mây');
+      if (name === 'lantern_lit') notice(data.relight ? 'Ngọn đèn đã được thắp lại' : 'Một ngọn đèn đã sáng');
+      if (name === 'refuel') notice('Đèn đã được châm dầu');
+      if (name === 'lantern_out') notice('Một ngọn đèn đã cạn dầu', true);
+      if (name === 'player_hit') notice(data.by === 'fall' ? 'Mây vừa rơi khỏi đảo' : 'Bóng Mực chạm vào Mây', true);
       if (name === 'charm_picked') notice('Mây nhặt được Bùa Gió');
       if (name === 'drifter_steal') notice(`Gió Lạc lấy ${data.amount} đom đóm`);
       if (name === 'game_over') showResult();
@@ -243,7 +274,7 @@ function run(view) {
     if (game.jumped) sound.cue('jump');
     if (!wasWarning && game.wind.warning) {
       sound.cue('wind');
-      notice('Gió mạnh sắp tới');
+      notice('Gió mạnh sắp tới', true);
     }
   }
 
@@ -325,7 +356,7 @@ function run(view) {
       ? game.simTick * tickLength : timestamp / 1000;
     view.draw(game, cameraYaw, visualTime, game.state === 'paused' ? 0 : delta);
     if (mode === 'playing') {
-      const hint = view.hint(nearbyLantern(game, game.player.pos, Infinity));
+      const hint = view.hint(nearestLantern(game.lanterns, game.player.pos, (lantern) => !lantern.lit));
       elements.direction.hidden = !hint;
       if (hint) {
         elements.direction.style.left = `${hint.x}%`;
@@ -339,6 +370,10 @@ function run(view) {
 
   elements['pause-button'].addEventListener('click', pause);
   for (const key of ['volume', 'sensitivity']) elements[key].addEventListener('input', updateSettings);
+  elements['distinct-colors'].addEventListener('change', () => {
+    updateSettings();
+    view.setDistinctColors(settings.distinctColors);
+  });
   window.addEventListener('keydown', (event) => {
     if ((event.code === 'Escape' || event.code === 'KeyP') && !event.repeat) {
       if (mode === 'playing') pause();
@@ -368,6 +403,7 @@ function run(view) {
     elements.view.addEventListener(event, () => { dragX = undefined; });
   }
   setSettingsValues();
+  view.setDistinctColors(settings.distinctColors);
   showMenu();
   requestAnimationFrame(frame);
 }

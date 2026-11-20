@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { tuning } from './rules.js';
+import { TICKS_PER_SECOND, tuning } from './rules.js';
+import { hasSafeLight, isWeakLight, MAX_FUEL_UNITS } from './lanterns.js';
 import { RAMP_WIDTH, TOWER_RADIUS } from './world.js';
 
 const palette = {
@@ -18,6 +19,7 @@ const palette = {
   moteGlow: '#FFE58A',
   shade: '#120A1A',
   purple: '#7A3CFF',
+  accessibleShade: '#00B3FF',
   stunned: '#3A3450',
   player: '#E8E2D0',
   red: '#C8102E',
@@ -256,19 +258,52 @@ function makePlayer(scene, glow) {
   return { body, shoes };
 }
 
+function tornPaperGeometry() {
+  const paper = new THREE.Shape();
+  const outline = [[-0.266, -0.41], [0.266, -0.41], [0.266, 0.41], [0.10, 0.41],
+    [0.035, 0.23], [0.13, 0.27], [-0.045, -0.25], [-0.022, 0.05], [-0.13, -0.02],
+    [-0.092, 0.41], [-0.266, 0.41]];
+  paper.moveTo(...outline[0]);
+  for (const point of outline.slice(1)) paper.lineTo(...point);
+  const face = new THREE.ShapeGeometry(paper);
+  const geometry = face.toNonIndexed();
+  const points = geometry.getAttribute('position');
+  const positions = [];
+  for (let side = 0; side < 6; side += 1) {
+    const angle = (side + 0.5) * Math.PI / 3;
+    const sin = Math.sin(angle);
+    const cos = Math.cos(angle);
+    const radius = 0.53 * Math.cos(Math.PI / 6);
+    for (let i = 0; i < points.count; i += 1) {
+      const x = points.getX(i);
+      positions.push(x * cos + radius * sin, points.getY(i), radius * cos - x * sin);
+    }
+  }
+  face.dispose();
+  geometry.dispose();
+  const torn = new THREE.BufferGeometry();
+  torn.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  torn.computeVertexNormals();
+  return torn;
+}
+
 function makeLantern(scene, glow) {
   const group = new THREE.Group();
   scene.add(group);
+  const body = new THREE.Group();
+  group.add(body);
   const wood = material(palette.wood);
-  makeMesh(group, new THREE.CylinderGeometry(0.8, 1.14, 0.39, 8), material('#777476'), 0, 0.19, 0);
-  makeMesh(group, stem, wood, 0, 1.08, 0).scale.set(1.4, 1.83, 1.4);
-  makeMesh(group, new THREE.CylinderGeometry(0.64, 0.48, 0.15, 6), wood, 0, 1.98, 0);
+  makeMesh(body, new THREE.CylinderGeometry(0.8, 1.14, 0.39, 8), material('#777476'), 0, 0.19, 0);
+  makeMesh(body, stem, wood, 0, 1.08, 0).scale.set(1.4, 1.83, 1.4);
+  makeMesh(body, new THREE.CylinderGeometry(0.64, 0.48, 0.15, 6), wood, 0, 1.98, 0);
   const paper = material(palette.lanternOff);
-  makeMesh(group, new THREE.CylinderGeometry(0.53, 0.53, 0.82, 6), paper, 0, 2.42, 0);
-  makeMesh(group, new THREE.ConeGeometry(0.75, 0.56, 6), wood, 0, 3.07, 0);
+  paper.side = THREE.DoubleSide;
+  const intact = makeMesh(body, new THREE.CylinderGeometry(0.53, 0.53, 0.82, 6), paper, 0, 2.42, 0);
+  const torn = makeMesh(body, tornPaperGeometry(), paper, 0, 2.42, 0);
+  makeMesh(body, new THREE.ConeGeometry(0.75, 0.56, 6), wood, 0, 3.07, 0);
   for (let index = 0; index < 6; index += 1) {
     const angle = index * Math.PI / 3;
-    makeMesh(group, new THREE.BoxGeometry(0.055, 0.83, 0.055), wood,
+    makeMesh(body, new THREE.BoxGeometry(0.055, 0.83, 0.055), wood,
       Math.sin(angle) * 0.53, 2.42, Math.cos(angle) * 0.53);
   }
   const halo = glowSprite(glow, palette.lanternCore, 5.1, 1);
@@ -279,7 +314,14 @@ function makeLantern(scene, glow) {
   circle.rotation.x = -Math.PI / 2;
   circle.position.y = 0.023;
   group.add(circle);
-  return { group, paper, halo, circle };
+  const gauge = new THREE.Group();
+  gauge.position.y = 3.76;
+  group.add(gauge);
+  const backing = new THREE.MeshBasicMaterial({ color: '#0E1430', transparent: true, opacity: 0.92 });
+  makeMesh(gauge, new THREE.PlaneGeometry(1.65, 0.22), backing, 0, 0, 0);
+  const fill = new THREE.MeshBasicMaterial({ color: palette.lanternCore, transparent: true, toneMapped: false });
+  const gaugeFill = makeMesh(gauge, new THREE.PlaneGeometry(1.5, 0.115), fill, 0, 0, 0.015);
+  return { group, body, intact, torn, paper, halo, circle, gauge, gaugeFill };
 }
 
 export function createView(container, game) {
@@ -322,6 +364,7 @@ export function createView(container, game) {
   const shadeStunned = material(palette.stunned);
   const shadeEye = new THREE.SphereGeometry(0.062, 8, 6);
   const shadeEyes = new THREE.MeshBasicMaterial({ color: palette.purple, toneMapped: false });
+  let shadeAccent = palette.purple;
   const drifterBody = new THREE.PlaneGeometry(1.32, 0.74, 6, 2);
   const drifterMaterial = new THREE.MeshBasicMaterial({ color: palette.drifter, side: THREE.DoubleSide,
     transparent: true, opacity: 0.9 });
@@ -394,14 +437,28 @@ export function createView(container, game) {
     camera.lookAt(x + Math.sin(yaw) * 2.1, Math.max(-4, y) + 1.03, z + Math.cos(yaw) * 2.1);
 
     ambient.intensity = 0.15 + 0.55 * gameState.lanterns.filter(({ lit }) => lit).length / gameState.lanterns.length;
-    gameState.lanterns.forEach(({ pos: location, lit }, index) => {
+    gameState.lanterns.forEach((lantern, index) => {
+      const { pos: location, lit, fuelUnits } = lantern;
       const model = lanterns[index];
       model.group.position.fromArray(location);
+      model.body.scale.y = lit ? 1 : 0.8;
+      model.intact.visible = lit;
+      model.torn.visible = !lit;
+      const dim = isWeakLight(lantern) && gameState.simTick % TICKS_PER_SECOND >= TICKS_PER_SECOND / 2;
       model.paper.color.set(lit ? palette.lanternOn : palette.lanternOff);
       model.paper.emissive.set(lit ? palette.lanternOn : palette.lanternOff);
-      model.paper.emissiveIntensity = lit ? 0.72 : 0.12;
+      model.paper.emissiveIntensity = lit && !dim ? 0.72 : 0.12;
       model.halo.visible = lit;
-      model.circle.visible = lit;
+      model.halo.material.opacity = dim ? 0.24 : 1;
+      model.circle.visible = hasSafeLight(lantern);
+      model.gauge.visible = lit;
+      if (lit) {
+        const fraction = fuelUnits / MAX_FUEL_UNITS;
+        model.gauge.lookAt(camera.position);
+        model.gaugeFill.scale.x = fraction;
+        model.gaugeFill.position.x = -0.75 * (1 - fraction);
+        model.gaugeFill.material.opacity = dim ? 0.3 : 1;
+      }
     });
 
     const visibleMotes = Math.min(gameState.motes.length, motePositions.count);
@@ -414,7 +471,7 @@ export function createView(container, game) {
 
     syncModels(shades, gameState.shades, () => {
       const group = new THREE.Group();
-      const halo = glowSprite(glow, palette.purple, 3.65, 0.8);
+      const halo = glowSprite(glow, shadeAccent, 3.65, 0.8);
       group.add(halo);
       const core = makeMesh(group, sphere, shadeCore, 0, 0, 0);
       core.scale.set(0.57, 0.93, 0.53);
@@ -502,6 +559,11 @@ export function createView(container, game) {
 
   return {
     draw,
+    setDistinctColors(enabled) {
+      shadeAccent = enabled ? palette.accessibleShade : palette.purple;
+      shadeEyes.color.set(shadeAccent);
+      for (const shade of shades.values()) shade.children[0].material.color.set(shadeAccent);
+    },
     hint(lantern) {
       if (!lantern) return null;
       hintPoint.fromArray(lantern.pos);

@@ -1,6 +1,6 @@
 import { closeSync, openSync, readFileSync, writeSync } from 'node:fs';
 import { createGame, DEFAULT_INPUT, snapshot, stepGame } from './game.js';
-import { DRIFTER_STATES, SHADE_STATES } from './rules.js';
+import { DRIFTER_STATES, SHADE_STATES, tuning } from './rules.js';
 import { nightMap } from './world.js';
 
 const OPTIONS = ['seed', 'night', 'scenario', 'inputs', 'ticks', 'out', 'snapshot-every'];
@@ -104,11 +104,14 @@ function validateScenario(value, night) {
       pos: position, carried: nonnegativeInteger, flames: nonnegativeInteger,
       invuln_ticks: nonnegativeInteger, dash_cd_ticks: nonnegativeInteger,
       pulse_cd_ticks: nonnegativeInteger, charm_ticks: nonnegativeInteger,
+      successful_lights: nonnegativeInteger,
     }, 'scenario.player');
   }
 
+  const validLanternIds = new Set(nightMap(night).lanterns.map((_, i) => `L${i + 1}`));
   validateEntities(value.shades ?? [], 'shades', {
     state: (state) => SHADE_STATES.includes(state), state_ticks_left: nonnegativeInteger,
+    target_lantern_id: (id) => id === null || validLanternIds.has(id),
   }, true);
   validateEntities(value.drifters ?? [], 'drifters', {
     state: (state) => DRIFTER_STATES.includes(state), state_ticks_left: nonnegativeInteger,
@@ -119,10 +122,10 @@ function validateScenario(value, night) {
     respawn_s: nonnegativeNumber,
   }, false);
 
-  const validLanternIds = new Set(nightMap(night).lanterns.map((_, i) => `L${i + 1}`));
   for (const [index, lantern] of (value.lanterns ?? []).entries()) {
     const path = `scenario.lanterns[${index}]`;
-    validateFields(lantern, { pos: position, lit: boolean, deposited: nonnegativeInteger }, path);
+    validateFields(lantern, { pos: position, lit: boolean, deposited: nonnegativeInteger,
+      fuel: (fuel) => nonnegativeNumber(fuel) && fuel <= tuning.fuel_max, ever_lit: boolean }, path);
     requireFormat(validLanternIds.delete(lantern.id), `${path}.id`);
   }
   return value;

@@ -1,5 +1,7 @@
-import { CHARM_RESPAWN_TICKS, CHARM_TICKS, STEP, TICKS_PER_SECOND, tuning } from './rules.js';
+import { carryCapacity, CHARM_RESPAWN_TICKS, CHARM_TICKS, STEP, TICKS_PER_SECOND, tuning } from './rules.js';
 import { blockedAcross, directionXZ, distanceXZ, EPSILON, floorAt, polar, TAU, topAt } from './world.js';
+import { clearDrain, DRAIN_RANGE, drainTarget, hasSafeLight, isWeakLight, nearestLantern,
+  returnToWander } from './lanterns.js';
 
 const DROP_TTL = 480;
 const DRIFTER_INTERVAL = 1200;
@@ -30,10 +32,11 @@ export function addMote(game, pos, kind = 'random', expiresAt = null) {
   game.motes.push({ id: nextId(game, 'Mote', 'M'), pos: [...pos], kind, expiresAt });
 }
 
-function addShade(game, { pos, id, state = 'chase', state_ticks_left: ticks = 0 }) {
+function addShade(game, { pos, id, state = 'chase', state_ticks_left: ticks = 0, target_lantern_id: target = null }) {
   const shade = {
     id: id ?? nextId(game, 'Shade', 'S'), pos: [...pos], state,
     stateUntil: ticks + game.simTick, ejection: null, push: null,
+    targetLanternId: target, drainTicks: 0, wanderSince: null,
     angle: Math.atan2(pos[2], pos[0]) + Math.PI / 2,
   };
   game.shades.push(shade);
@@ -95,10 +98,10 @@ export function updateTimers(game) {
     if (game.simTick >= charm.respawnAt) charm.available = true;
   }
   for (const shade of game.shades) {
-    if (game.simTick >= shade.stateUntil && shade.state !== 'chase' && shade.state !== 'wander') {
-      shade.state = 'wander';
-      shade.push = null;
-    }
+    if (game.simTick < shade.stateUntil || !['spawning', 'recoil', 'stunned'].includes(shade.state)) continue;
+    if (shade.state === 'stunned') returnToWander(shade, game.simTick);
+    else shade.state = 'wander';
+    shade.push = null;
   }
 }
 
@@ -109,7 +112,7 @@ function inPickupRange(a, b) {
 export function pickUp(game, emit) {
   const player = game.player;
   game.motes = game.motes.filter((mote) => {
-    if (player.carried >= tuning.carry_capacity || !inPickupRange(player.pos, mote.pos)) return true;
+    if (player.carried >= carryCapacity(player) || !inPickupRange(player.pos, mote.pos)) return true;
     player.carried += 1;
     emit('mote_picked', { carried: player.carried });
     return false;
@@ -126,14 +129,14 @@ export function pickUp(game, emit) {
 
 export function shadeSafeAt(game, pos) {
   return game.lanterns.some((lantern) =>
-    lantern.lit && distanceXZ(lantern.pos, pos) < tuning.safe_radius - EPSILON);
+    hasSafeLight(lantern) && distanceXZ(lantern.pos, pos) < tuning.safe_radius - EPSILON);
 }
 
 function ejectionTarget(game, pos) {
   let target;
   let best = Infinity;
   for (const lantern of game.lanterns) {
-    if (!lantern.lit || distanceXZ(lantern.pos, pos) >= tuning.safe_radius) continue;
+    if (!hasSafeLight(lantern) || distanceXZ(lantern.pos, pos) >= tuning.safe_radius) continue;
     const outward = Math.atan2(pos[2] - lantern.pos[2], pos[0] - lantern.pos[0]);
     for (let index = 0; index < 32; index += 1) {
       const candidate = polar(tuning.safe_radius + 2 * EPSILON, outward + index * TAU / 32,
@@ -152,11 +155,12 @@ function ejectionTarget(game, pos) {
 
 export function updateSafeZones(game) {
   for (const shade of game.shades) {
+    if (shade.state === 'drain' && !drainTarget(game, shade)) returnToWander(shade, game.simTick);
+    if (shade.ejection && game.simTick <= shade.ejection.until && !shadeSafeAt(game, shade.ejection.target)) continue;
     if (!shadeSafeAt(game, shade.pos)) {
       shade.ejection = null;
       continue;
     }
-    if (shade.ejection && !shadeSafeAt(game, shade.ejection.target)) continue;
     const target = ejectionTarget(game, shade.pos);
     if (target) shade.ejection = { target, until: game.simTick + SAFE_EJECT_TICKS - 1 };
   }
@@ -168,7 +172,7 @@ function shadeTravel(game, shade, dx, dz) {
   if (length === 0) return true;
   let travel = 1;
   for (const lantern of game.lanterns) {
-    if (!lantern.lit) continue;
+    if (!hasSafeLight(lantern)) continue;
     const ax = x - lantern.pos[0];
     const az = z - lantern.pos[2];
     const projection = ax * dx + az * dz;
@@ -211,12 +215,13 @@ export function doPulse(game, emit) {
   const stunnedIds = [];
   for (const shade of game.shades) {
     if (pulseDistance(player, shade.pos) > tuning.pulse_radius + EPSILON) continue;
+    game.score += shade.state === 'drain' ? tuning.score.per_drain_stun : tuning.score.per_stun;
+    clearDrain(shade);
     shade.state = 'stunned';
     shade.stateUntil = simTick + tuning.pulse_stun_s * TICKS_PER_SECOND;
     setPush(shade, player.pos, tuning.pulse_push_m, SHADE_PUSH_TICKS, simTick);
     stunnedIds.push(shade.id);
   }
-  game.score += stunnedIds.length * tuning.score.per_stun;
   emit('pulse', { stunned_ids: stunnedIds });
   for (const drifter of game.drifters) {
     if (pulseDistance(player, drifter.pos) > tuning.pulse_radius + EPSILON) continue;
@@ -234,6 +239,30 @@ export function doPulse(game, emit) {
       drifter.fleeUntil = simTick + 120;
       emit('drifter_drop', { drifter_id: drifter.id, amount });
     }
+  }
+}
+
+function approachShade(game, shade, target, speed) {
+  const [dx, dz] = directionXZ(shade.pos, target, [0, 0]);
+  const travel = Math.min(distanceXZ(shade.pos, target), speed * STEP);
+  shadeTravel(game, shade, dx * travel, dz * travel);
+}
+
+function moveWanderingShade(game, shade, speed) {
+  const lamp = nearestLantern(game.lanterns, shade.pos, isWeakLight)
+    ?? nearestLantern(game.lanterns, shade.pos, (lantern) => !lantern.lit);
+  if (lamp) {
+    const weak = isWeakLight(lamp);
+    if (!weak || distanceXZ(shade.pos, lamp.pos) > DRAIN_RANGE + EPSILON) {
+      approachShade(game, shade, lamp.pos, speed);
+    }
+    if (weak && distanceXZ(shade.pos, lamp.pos) <= DRAIN_RANGE + EPSILON) {
+      shade.state = 'drain';
+      shade.targetLanternId = lamp.id;
+      shade.drainTicks = 0;
+    }
+  } else if (!shadeTravel(game, shade, Math.cos(shade.angle) * speed * STEP, Math.sin(shade.angle) * speed * STEP)) {
+    shade.angle += Math.PI * 0.74;
   }
 }
 
@@ -257,15 +286,17 @@ export function moveActors(game) {
     }
     const distance = distanceXZ(player.pos, shade.pos);
     const speed = game.night === 3 ? 4.5 : tuning.shade_speed;
-    if (!reachable || distance > 18 + EPSILON) shade.state = 'wander';
-    else if (distance <= 12 + EPSILON) shade.state = 'chase';
-    if (shade.state === 'chase') {
-      const [dx, dz] = directionXZ(shade.pos, player.pos, [0, 0]);
-      const travel = Math.min(distance, speed * STEP);
-      shadeTravel(game, shade, dx * travel, dz * travel);
-    } else if (!shadeTravel(game, shade, Math.cos(shade.angle) * speed * STEP, Math.sin(shade.angle) * speed * STEP)) {
-      shade.angle += Math.PI * 0.74;
+    if (shade.state === 'drain') {
+      if (!reachable || distance > 6 + EPSILON) continue;
+      clearDrain(shade);
+      shade.state = 'chase';
+    } else {
+      if (shade.wanderSince === simTick) continue;
+      if (!reachable || distance > 18 + EPSILON) shade.state = 'wander';
+      else if (distance <= 12 + EPSILON) shade.state = 'chase';
     }
+    if (shade.state === 'chase') approachShade(game, shade, player.pos, speed);
+    else moveWanderingShade(game, shade, speed);
   }
   for (const drifter of game.drifters) {
     if (drifter.state === 'flee') {

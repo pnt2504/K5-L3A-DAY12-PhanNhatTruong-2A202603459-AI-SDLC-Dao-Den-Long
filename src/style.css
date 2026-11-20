@@ -4,6 +4,7 @@
   background: #0E1430;
   font-synthesis: none;
   --amber: #F2C14E;
+  --warning: #FF5A5F;
   --surface: #101725da;
 }
 
@@ -11,6 +12,7 @@
 body { margin: 0; overflow: hidden; }
 [hidden] { display: none !important; }
 #game { position: relative; width: 100vw; height: 100vh; height: 100dvh; }
+#game[data-palette="distinct"] { --warning: #FFFFFF; }
 #view { position: absolute; inset: 0; touch-action: none; }
 #view canvas { display: block; width: 100%; height: 100%; }
 #hud {
@@ -42,7 +44,9 @@ body { margin: 0; overflow: hidden; }
 .center { justify-self: center; text-align: center; }
 .right { justify-self: end; text-align: right; }
 #time { font-size: 1.42rem; font-variant-numeric: tabular-nums; font-weight: 700; line-height: 1; }
-#time.urgent { color: #FF5A5F; animation: clock-alert 1s steps(2, jump-none) infinite; }
+#time.urgent { color: var(--warning); animation: clock-alert 1s steps(2, jump-none) infinite; }
+.warning { color: var(--warning); }
+#dawn-target { font-size: .68rem; color: #F5F1E6; }
 @keyframes clock-alert { 50% { opacity: .52; } }
 @media (prefers-reduced-motion: reduce) { #time.urgent { animation: none; } }
 .flames { color: var(--amber); letter-spacing: .25em; white-space: nowrap; }
@@ -63,7 +67,7 @@ body { margin: 0; overflow: hidden; }
 }
 .inventory { justify-self: center; text-align: center; min-width: 160px; }
 .inventory strong { color: #fff5dc; margin-left: 6px; }
-#slots { display: flex; justify-content: center; gap: 6px; padding: 2px 0; }
+#slots { display: flex; flex-wrap: wrap; justify-content: center; max-width: 154px; gap: 5px; padding: 2px 0; }
 #slots span { width: 10px; height: 10px; background: #aa92803d; border: 1px solid #ffdb9a54; border-radius: 50%; }
 #slots span.charged { background: #ffe19a; box-shadow: 0 0 9px #ffc46d9c; }
 #pulse-status { font-size: .74rem; color: #efdbc7; }

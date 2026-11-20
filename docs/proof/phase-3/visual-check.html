@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kiểm tra hình ảnh Phase 3</title>
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body>
+    <main id="game">
+      <div id="view"></div>
+      <div class="hud-card" style="position:absolute;top:16px;left:16px">
+        <strong>Đèn tắt · Đèn yếu · Đèn đủ dầu</strong>
+        <label><input type="checkbox" id="palette"> Bảng màu dễ phân biệt</label>
+        <label><input type="checkbox" id="dim"> Nửa giây sau</label>
+      </div>
+    </main>
+    <script type="module">
+      import { createGame, stepGame } from '/src/game.js';
+      import { createView } from '/src/scene.js';
+
+      const scenario = {
+        random_motes: false,
+        random_shades: false,
+        shades: [{ pos: [-3, 0.8, 4], state: 'spawning', state_ticks_left: 90 }],
+        lanterns: [
+          { id: 'L1', pos: [4, 0, 6], ever_lit: true },
+          { id: 'L2', pos: [0, 0, 8], lit: true, fuel: 24 },
+          { id: 'L3', pos: [-4, 0, 6], lit: true, fuel: 100 },
+        ],
+      };
+      const palette = document.getElementById('palette');
+      const dim = document.getElementById('dim');
+      const view = createView(document.getElementById('view'), createGame(12, scenario));
+      function draw() {
+        const game = createGame(12, scenario);
+        for (let tick = 0; dim.checked && tick < 30; tick += 1) stepGame(game);
+        view.setDistinctColors(palette.checked);
+        view.draw(game, 0, 0, 0);
+      }
+      palette.addEventListener('change', draw);
+      dim.addEventListener('change', draw);
+      window.addEventListener('resize', draw);
+      draw();
+    </script>
+  </body>
+</html>

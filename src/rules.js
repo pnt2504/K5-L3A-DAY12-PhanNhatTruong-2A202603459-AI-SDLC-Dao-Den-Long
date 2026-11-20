@@ -15,5 +15,9 @@ export const DEFAULT_INPUT = Object.freeze({
   pause: false,
 });
 
-export const SHADE_STATES = ['spawning', 'wander', 'chase', 'recoil', 'stunned'];
+export const SHADE_STATES = ['spawning', 'wander', 'chase', 'recoil', 'stunned', 'drain'];
 export const DRIFTER_STATES = ['idle', 'chase', 'flee', 'removed'];
+
+export function carryCapacity(player) {
+  return Math.min(tuning.capacity_max, tuning.carry_capacity + 2 * player.successfulLights);
+}
