@@ -1,0 +1,29 @@
+{
+  "node": "v24.16.0",
+  "platform": "win32",
+  "arch": "x64",
+  "stressArgs": [
+    "--night",
+    "3",
+    "--ticks",
+    "18000",
+    "--snapshot-every",
+    "10",
+    "--scenario",
+    "test/fixtures/phase-2/stress.scenario.json"
+  ],
+  "seed": 12,
+  "seconds": [
+    0.24952369999999974,
+    0.2575191999999997
+  ],
+  "identical": true,
+  "bytes": 6490993,
+  "sha256": "79e2c7117e951ef8c1614f0c1ae2f5ace9821fa13207f9ab2f9f07dacd2036d5",
+  "dawn": {
+    "type": "end",
+    "ticks": 180,
+    "state": "won",
+    "score": 684
+  }
+}

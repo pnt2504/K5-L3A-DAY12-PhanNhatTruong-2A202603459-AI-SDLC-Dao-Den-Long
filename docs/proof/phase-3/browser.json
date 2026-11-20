@@ -1,0 +1,8 @@
+{
+  "originalPalette": "standard",
+  "chosenPalette": "distinct",
+  "savedPalette": "distinct",
+  "restoredPalette": "standard",
+  "browserFPS": "1280×720 · 107.3 FPS trung bình · 10.0 giây",
+  "hud": "- main \"Đảo Đèn Lồng\":\n  - generic \"Cảnh 3D Đảo Bến\"\n  - generic: Ngọn lửa\n  - generic \"3 / 3 Ngọn Lửa\": ◆◆◆\n  - generic: Đêm 1 · Đảo Bến\n  - time: 04:00\n  - generic: Đèn đã thắp\n  - strong: 0 / 5\n  - text: 0 điểm\n  - generic: Giữ 3 đèn tới bình minh\n  - button \"Tạm dừng\": Ⅱ\n  - generic \"Hướng tới đèn chưa sáng\":\n    - generic: ▲\n  - text: Đom đóm\n  - strong: 0 / 10\n  - paragraph:\n    - generic: WASD\n    - text: Di chuyển\n    - generic: Space\n    - text: Nhảy\n    - generic: Shift\n    - text: Lướt\n    - generic: Q\n    - text: Tỏa Sáng\n    - generic: P\n    - text: Dừng Kéo chuột để xoay camera\n  - complementary \"Kỹ năng\":\n    - generic: Shift\n    - text: Lướt\n    - strong: Sẵn sàng\n    - generic: Q\n    - text: Tỏa Sáng\n    - strong: Cần 3 đom đóm\n  - status: Đang đo tốc độ khung hình…"
+}
