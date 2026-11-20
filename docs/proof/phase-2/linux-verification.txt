@@ -1,0 +1,216 @@
+TAP version 13
+# Subtest: nhạc và mỗi hiệu ứng Phase 2 tạo nốt với tần số và thời điểm riêng
+ok 1 - nhạc và mỗi hiệu ứng Phase 2 tạo nốt với tần số và thời điểm riêng
+  ---
+  duration_ms: 2.337316
+  type: 'test'
+  ...
+# Subtest: input giữ trạng thái, xoay theo yaw và chuẩn hóa di chuyển chéo
+ok 2 - input giữ trạng thái, xoay theo yaw và chuẩn hóa di chuyển chéo
+  ---
+  duration_ms: 47.599651
+  type: 'test'
+  ...
+# Subtest: giữ jump không tự bật lại khi đã tiếp đất
+ok 3 - giữ jump không tự bật lại khi đã tiếp đất
+  ---
+  duration_ms: 45.616067
+  type: 'test'
+  ...
+# Subtest: nhặt đom đóm, thắp đèn cuối, cộng điểm và dừng đúng tick
+ok 4 - nhặt đom đóm, thắp đèn cuối, cộng điểm và dừng đúng tick
+  ---
+  duration_ms: 39.946968
+  type: 'test'
+  ...
+# Subtest: nạp một phần; giữ E không nạp lại; lần nhấn kế tiếp thắp đèn
+ok 5 - nạp một phần; giữ E không nạp lại; lần nhấn kế tiếp thắp đèn
+  ---
+  duration_ms: 45.587299
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng đẩy, choáng, tiêu hao; khi hết choáng Bóng Mực quay lại gây thua
+ok 6 - Tỏa Sáng đẩy, choáng, tiêu hao; khi hết choáng Bóng Mực quay lại gây thua
+  ---
+  duration_ms: 51.93116
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng thiếu tài nguyên và đang hồi chiêu đều không kích hoạt
+ok 7 - Tỏa Sáng thiếu tài nguyên và đang hồi chiêu đều không kích hoạt
+  ---
+  duration_ms: 67.773773
+  type: 'test'
+  ...
+# Subtest: vùng sáng chặn Bóng Mực, bất tử chặn sát thương lặp lại
+ok 8 - vùng sáng chặn Bóng Mực, bất tử chặn sát thương lặp lại
+  ---
+  duration_ms: 92.02552
+  type: 'test'
+  ...
+# Subtest: rơi khỏi đảo mất một lửa và trở về điểm xuất phát; hết giờ thì thua
+ok 9 - rơi khỏi đảo mất một lửa và trở về điểm xuất phát; hết giờ thì thua
+  ---
+  duration_ms: 122.617049
+  type: 'test'
+  ...
+# Subtest: snapshot cách 10 tick và đầu ra khớp từng byte khi dùng cùng seed
+ok 10 - snapshot cách 10 tick và đầu ra khớp từng byte khi dùng cùng seed
+  ---
+  duration_ms: 139.971318
+  type: 'test'
+  ...
+# Subtest: override một phần scenario, ID mặc định không đụng ID đặt sẵn và --ticks 0
+ok 11 - override một phần scenario, ID mặc định không đụng ID đặt sẵn và --ticks 0
+  ---
+  duration_ms: 31.842771
+  type: 'test'
+  ...
+# Subtest: inputs hoặc scenario sai cấu trúc → 2 và stderr; tham số sai → 1
+ok 12 - inputs hoặc scenario sai cấu trúc → 2 và stderr; tham số sai → 1
+  ---
+  duration_ms: 334.604619
+  type: 'test'
+  ...
+# Subtest: tuning v1.1: bản đồ, số đèn, đồng hồ và vị trí sinh theo từng Đêm
+ok 13 - tuning v1.1: bản đồ, số đèn, đồng hồ và vị trí sinh theo từng Đêm
+  ---
+  duration_ms: 205.180459
+  type: 'test'
+  ...
+# Subtest: Lướt 12 tick, giữ độ cao, bỏ lần nhấn khi đang Lướt và chờ đúng 90 tick
+ok 14 - Lướt 12 tick, giữ độ cao, bỏ lần nhấn khi đang Lướt và chờ đúng 90 tick
+  ---
+  duration_ms: 106.111317
+  type: 'test'
+  ...
+# Subtest: tạm dừng làm đứng yên gameplay, spawn, hồi chiêu, bất tử và TTL
+ok 15 - tạm dừng làm đứng yên gameplay, spawn, hồi chiêu, bất tử và TTL
+  ---
+  duration_ms: 85.504345
+  type: 'test'
+  ...
+# Subtest: Bùa Gió tăng tốc, Lướt liên tiếp và hồi sinh đồng bộ theo tick
+ok 16 - Bùa Gió tăng tốc, Lướt liên tiếp và hồi sinh đồng bộ theo tick
+  ---
+  duration_ms: 202.700361
+  type: 'test'
+  ...
+# Subtest: Gió Lạc cướp trong vùng sáng và lúc bất tử, Tỏa Sáng lấy lại được đom đóm
+ok 17 - Gió Lạc cướp trong vùng sáng và lúc bất tử, Tỏa Sáng lấy lại được đom đóm
+  ---
+  duration_ms: 105.450208
+  type: 'test'
+  ...
+# Subtest: Gió Lạc sinh theo lịch, tối đa hai ở Đêm 2–3 và không tự sinh ở Đêm 1
+ok 18 - Gió Lạc sinh theo lịch, tối đa hai ở Đêm 2–3 và không tự sinh ở Đêm 1
+  ---
+  duration_ms: 251.976082
+  type: 'test'
+  ...
+# Subtest: Đảo Cau đi qua cầu và bật đúng hướng, bỏ qua phím di chuyển khi đang bay
+ok 19 - Đảo Cau đi qua cầu và bật đúng hướng, bỏ qua phím di chuyển khi đang bay
+  ---
+  duration_ms: 117.675159
+  type: 'test'
+  ...
+# Subtest: Đảo Chuông có vách, dốc, bục lên tầng 2 và tháp đứng chắn đường
+ok 20 - Đảo Chuông có vách, dốc, bục lên tầng 2 và tháp đứng chắn đường
+  ---
+  duration_ms: 162.004523
+  type: 'test'
+  ...
+# Subtest: Gió mạnh Đêm 3 bật ở tick 1800, đủ 300 tick, đẩy đúng 2 m/s và tắt được
+ok 21 - Gió mạnh Đêm 3 bật ở tick 1800, đủ 300 tick, đẩy đúng 2 m/s và tắt được
+  ---
+  duration_ms: 177.135979
+  type: 'test'
+  ...
+# Subtest: nhặt và chạm kiểm tra độ cao; pulse kiểm tra bán kính 3D từ chân cộng 0.8 m
+ok 22 - nhặt và chạm kiểm tra độ cao; pulse kiểm tra bán kính 3D từ chân cộng 0.8 m
+  ---
+  duration_ms: 68.285313
+  type: 'test'
+  ...
+# Subtest: khóa vùng sáng đẩy Bóng Mực đang đứng trong vùng ra trong tối đa 30 tick
+ok 23 - khóa vùng sáng đẩy Bóng Mực đang đứng trong vùng ra trong tối đa 30 tick
+  ---
+  duration_ms: 77.725278
+  type: 'test'
+  ...
+# Subtest: mô phỏng chuỗi ba Đêm: điểm thua không cộng, thắng đúng hạn mở Đêm kế tiếp
+ok 24 - mô phỏng chuỗi ba Đêm: điểm thua không cộng, thắng đúng hạn mở Đêm kế tiếp
+  ---
+  duration_ms: 153.398874
+  type: 'test'
+  ...
+# Subtest: thắng Đảo Bến và Đảo Cau từ cấu hình mặc định bằng đầu vào đã lưu
+ok 25 - thắng Đảo Bến và Đảo Cau từ cấu hình mặc định bằng đầu vào đã lưu
+  ---
+  duration_ms: 326.33686
+  type: 'test'
+  ...
+# Subtest: bật bục Đảo Chuông, đáp tầng 2 và nạp đèn cuối theo scenario v1.1
+ok 26 - bật bục Đảo Chuông, đáp tầng 2 và nạp đèn cuối theo scenario v1.1
+  ---
+  duration_ms: 38.332803
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3215.442987
+
+{
+  "node": "v24.16.0",
+  "platform": "linux",
+  "arch": "x64",
+  "night": 3,
+  "seed": 12,
+  "scenario": "test/fixtures/phase-2/stress.scenario.json",
+  "ticks": 21600,
+  "snapshotEvery": 10,
+  "seconds": [
+    0.23265752599999995,
+    0.22701039300000048
+  ],
+  "identical": true,
+  "bytes": 7210186,
+  "sha256": "ccc69ddc4970e52f4df4c61a91c7a24c7e35035a17c7f34a6eec3b39404f58f4",
+  "end": {
+    "type": "end",
+    "ticks": 21600,
+    "state": "lost",
+    "score": 0
+  },
+  "wins": [
+    {
+      "night": 1,
+      "seed": 12,
+      "type": "end",
+      "ticks": 12691,
+      "state": "won",
+      "score": 1366
+    },
+    {
+      "night": 2,
+      "seed": 2,
+      "type": "end",
+      "ticks": 15434,
+      "state": "won",
+      "score": 1524
+    },
+    {
+      "night": 3,
+      "seed": 12,
+      "type": "end",
+      "ticks": 55,
+      "state": "won",
+      "score": 1068
+    }
+  ]
+}

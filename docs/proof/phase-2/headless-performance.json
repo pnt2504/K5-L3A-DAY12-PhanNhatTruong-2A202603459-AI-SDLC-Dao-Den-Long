@@ -1,0 +1,49 @@
+{
+  "node": "v24.16.0",
+  "platform": "win32",
+  "arch": "x64",
+  "night": 3,
+  "seed": 12,
+  "scenario": "test/fixtures/phase-2/stress.scenario.json",
+  "ticks": 21600,
+  "snapshotEvery": 10,
+  "seconds": [
+    0.33269480000000023,
+    0.3568284999999996
+  ],
+  "identical": true,
+  "bytes": 7210186,
+  "sha256": "ccc69ddc4970e52f4df4c61a91c7a24c7e35035a17c7f34a6eec3b39404f58f4",
+  "end": {
+    "type": "end",
+    "ticks": 21600,
+    "state": "lost",
+    "score": 0
+  },
+  "wins": [
+    {
+      "night": 1,
+      "seed": 12,
+      "type": "end",
+      "ticks": 12691,
+      "state": "won",
+      "score": 1366
+    },
+    {
+      "night": 2,
+      "seed": 2,
+      "type": "end",
+      "ticks": 15434,
+      "state": "won",
+      "score": 1524
+    },
+    {
+      "night": 3,
+      "seed": 12,
+      "type": "end",
+      "ticks": 55,
+      "state": "won",
+      "score": 1068
+    }
+  ]
+}

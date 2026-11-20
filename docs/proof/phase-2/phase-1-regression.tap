@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: input giữ trạng thái, xoay theo yaw và chuẩn hóa di chuyển chéo
+ok 1 - input giữ trạng thái, xoay theo yaw và chuẩn hóa di chuyển chéo
+  ---
+  duration_ms: 112.3796
+  type: 'test'
+  ...
+# Subtest: giữ jump không tự bật lại khi đã tiếp đất
+ok 2 - giữ jump không tự bật lại khi đã tiếp đất
+  ---
+  duration_ms: 98.9298
+  type: 'test'
+  ...
+# Subtest: nhặt đom đóm, thắp đèn cuối, cộng điểm và dừng đúng tick
+ok 3 - nhặt đom đóm, thắp đèn cuối, cộng điểm và dừng đúng tick
+  ---
+  duration_ms: 88.0262
+  type: 'test'
+  ...
+# Subtest: đi hết Đêm 1 từ bản đồ mặc định, gom đom đóm và thắp cả năm đèn
+ok 4 - đi hết Đêm 1 từ bản đồ mặc định, gom đom đóm và thắp cả năm đèn
+  ---
+  duration_ms: 163.7658
+  type: 'test'
+  ...
+# Subtest: nạp một phần; giữ E không nạp lại; lần nhấn kế tiếp thắp đèn
+ok 5 - nạp một phần; giữ E không nạp lại; lần nhấn kế tiếp thắp đèn
+  ---
+  duration_ms: 144.0005
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng đẩy, choáng, tiêu hao; khi hết choáng Bóng Mực quay lại gây thua
+ok 6 - Tỏa Sáng đẩy, choáng, tiêu hao; khi hết choáng Bóng Mực quay lại gây thua
+  ---
+  duration_ms: 150.0079
+  type: 'test'
+  ...
+# Subtest: Tỏa Sáng thiếu tài nguyên và đang hồi chiêu đều không kích hoạt
+ok 7 - Tỏa Sáng thiếu tài nguyên và đang hồi chiêu đều không kích hoạt
+  ---
+  duration_ms: 227.3422
+  type: 'test'
+  ...
+# Subtest: vùng sáng chặn Bóng Mực, bất tử chặn sát thương lặp lại
+ok 8 - vùng sáng chặn Bóng Mực, bất tử chặn sát thương lặp lại
+  ---
+  duration_ms: 198.4032
+  type: 'test'
+  ...
+# Subtest: rơi khỏi đảo mất một lửa và trở về điểm xuất phát; hết giờ thì thua
+ok 9 - rơi khỏi đảo mất một lửa và trở về điểm xuất phát; hết giờ thì thua
+  ---
+  duration_ms: 144.8356
+  type: 'test'
+  ...
+# Subtest: snapshot cách 10 tick và đầu ra khớp từng byte khi dùng cùng seed
+ok 10 - snapshot cách 10 tick và đầu ra khớp từng byte khi dùng cùng seed
+  ---
+  duration_ms: 185.7556
+  type: 'test'
+  ...
+# Subtest: override một phần scenario, ID mặc định không đụng ID đặt sẵn và --ticks 0
+ok 11 - override một phần scenario, ID mặc định không đụng ID đặt sẵn và --ticks 0
+  ---
+  duration_ms: 70.8989
+  type: 'test'
+  ...
+# Subtest: inputs hoặc scenario sai cấu trúc → 2 và stderr; tham số sai → 1
+ok 12 - inputs hoặc scenario sai cấu trúc → 2 và stderr; tham số sai → 1
+  ---
+  duration_ms: 434.9908
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2235.4544

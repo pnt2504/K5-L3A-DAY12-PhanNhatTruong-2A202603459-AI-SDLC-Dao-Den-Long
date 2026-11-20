@@ -1,0 +1,16 @@
+{
+  "fps": "1280×720 · 120.0 FPS trung bình · 10.0 giây",
+  "intro": "- main \"Đảo Đèn Lồng\":\n  - generic \"Cảnh 3D Đảo Bến\"\n  - region \"Đảo Bến\":\n    - paragraph: Đêm 1 · Đảo Bến\n    - heading \"Đảo Bến\" [level=1]\n    - paragraph: \"Ông Đăng: “Mây ơi, hãy lần theo con đường quanh bến. Ngọn đèn đầu tiên sẽ soi lối cho con.”\"\n    - button \"Vào đêm\" [active]\n    - button \"Về menu\"",
+  "pauseByP": "- main \"Đảo Đèn Lồng\":\n  - generic \"Cảnh 3D Đảo Bến\"\n  - generic: Ngọn lửa\n  - generic \"3 / 3 Ngọn Lửa\": ◆◆◆\n  - generic: Đêm 1 · Đảo Bến\n  - time: 04:29\n  - generic: Đèn đã thắp\n  - strong: 0 / 5\n  - text: 0 điểm\n  - region \"Tạm dừng\":\n    - paragraph: Đêm 1 · Đảo Bến\n    - heading \"Tạm dừng\" [level=1]\n    - paragraph\n    - button \"Tiếp tục\" [active]\n    - button \"Chơi lại Đêm\"\n    - button \"Cài đặt\"\n    - button \"Về menu\"",
+  "pausedClock": "04:29",
+  "frozenClock": "04:29",
+  "settingsClock": "04:29",
+  "resumed": "playing",
+  "setVol": "56%",
+  "setSens": "105%",
+  "loadedVol": "56%",
+  "loadedSens": "105%",
+  "pausedByEscape": "paused",
+  "restartedClock": "05:00",
+  "returnedMenu": "menu"
+}
