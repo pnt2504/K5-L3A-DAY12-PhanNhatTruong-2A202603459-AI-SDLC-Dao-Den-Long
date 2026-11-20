@@ -117,7 +117,8 @@ test('soak chạy 10 đêm một tiến trình và báo bộ nhớ thật', (t) 
   const folder = mkdtempSync(join(tmpdir(), 'lantern-soak-'));
   t.after(() => rmSync(folder, { recursive: true, force: true }));
   const out = join(folder, 'soak.json');
-  execFileSync(process.execPath, ['--expose-gc', fileURLToPath(new URL('../scripts/soak.js', import.meta.url)),
+  execFileSync(process.execPath, ['--jitless', '--expose-gc',
+    fileURLToPath(new URL('../scripts/soak.js', import.meta.url)),
     '--seed', '7', '--nights', '10', '--out', out]);
   const report = JSON.parse(readFileSync(out, 'utf8'));
   assert.equal(report.nights, 10);
@@ -125,4 +126,5 @@ test('soak chạy 10 đêm một tiến trình và báo bộ nhớ thật', (t) 
   assert.equal(report.results.length, 10);
   assert.ok(report.results.every((result) => result === 'lost' || result === 'won'));
   assert.ok(report.mem_start_mb > 0 && report.mem_end_mb > 0 && report.duration_s > 0);
+  assert.ok(report.mem_end_mb <= report.mem_start_mb * 1.2, 'RSS tăng quá 20%');
 });

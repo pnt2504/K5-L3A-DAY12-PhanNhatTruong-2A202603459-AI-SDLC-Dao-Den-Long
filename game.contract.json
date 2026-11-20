@@ -5,7 +5,7 @@
   "run_cmd": "node scripts/run.js",
   "headless_cmd": "node src/headless.js",
   "bench_cmd": "node scripts/bench.js",
-  "soak_cmd": "node --expose-gc scripts/soak.js",
+  "soak_cmd": "node --jitless --expose-gc scripts/soak.js",
   "tuning": {
     "player_speed": 6,
     "carry_capacity": 10,

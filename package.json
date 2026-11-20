@@ -11,7 +11,7 @@
     "test": "node --test",
     "headless": "node src/headless.js",
     "bench": "node scripts/bench.js",
-    "soak": "node --expose-gc scripts/soak.js"
+    "soak": "node --jitless --expose-gc scripts/soak.js"
   },
   "engines": {
     "node": ">=22.12.0"

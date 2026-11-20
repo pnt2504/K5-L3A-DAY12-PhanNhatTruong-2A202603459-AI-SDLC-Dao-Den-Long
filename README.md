@@ -50,12 +50,12 @@ Khi đưa riêng thư mục `dist` lên hosting tĩnh, bảng xếp hạng lưu 
 npm test
 node src/headless.js --seed 12 --night 1 --ticks 180 --snapshot-every 30 --scenario test/fixtures/phase-3/maintenance.scenario.json --inputs test/fixtures/phase-3/maintenance.inputs.json --out out.jsonl
 node scripts/bench.js --seed 42 --duration 30 --out bench.json
-node --expose-gc scripts/soak.js --seed 7 --nights 10 --out soak.json
+node --jitless --expose-gc scripts/soak.js --seed 7 --nights 10 --out soak.json
 ```
 
 CLI headless nhận `--night 1`, `2` hoặc `3`. Ví dụ kiểm tra đèn cạn, thắp lại, châm dầu, Bóng Mực hút và kết quả ở bình minh. Benchmark dùng bản build, chạy Chromium trong cửa sổ với viewport 1280×720, cần môi trường đồ họa và WebGL 2. Script dùng Chrome hoặc Chromium có sẵn, hoặc tải Chromium qua Playwright nếu thiếu. Ba giây đầu là khởi động. Chromium được mở với `--disable-gpu-vsync` và `--disable-frame-rate-limit`. Giá trị `peak_mem_mb` là `null` vì renderer web không có RSS tiến trình để ghi. [Cờ Chromium](https://chromium.googlesource.com/chromium/src/+/HEAD/components/viz/common/switches.cc) · [Cài browser Playwright](https://playwright.dev/docs/browsers)
 
-Soak giữ một tiến trình và dùng seed từ 7 trở đi, xoay Đêm 1–3. RSS được đọc sau khi tải đêm đầu và sau khi giải phóng đêm cuối, với GC ở cả hai mốc. Chạy `node scripts/check-browser.js` để kiểm tra trình duyệt và lưu bằng chứng cục bộ.
+Soak giữ một tiến trình và dùng seed từ 7 trở đi, xoay Đêm 1–3. RSS được đọc sau khi tải đêm đầu và sau khi giải phóng đêm cuối, với GC ở cả hai mốc. Trình chạy soak dùng `--jitless` để V8 tránh cấp phát mã máy khi mô phỏng headless chạy lâu. Chạy `node scripts/check-browser.js` để kiểm tra trình duyệt và lưu bằng chứng cục bộ. [Chế độ JIT-less của V8](https://v8.dev/blog/jitless)
 
 - [Bằng chứng Phase 4](docs/proof/phase-4/README.md) · [Benchmark](bench.json) · [Soak](soak.json)
 - [Retro bốn phase](docs/retro.md) · [Changelog](CHANGELOG.md) · [Giấy phép](LICENSE)
